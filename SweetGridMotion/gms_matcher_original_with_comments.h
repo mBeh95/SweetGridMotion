@@ -303,29 +303,41 @@ private:
 	int run(int RotationType);
 };
 
+/** 
+* @pre
+* @post
+* @param	 
+* @param     
+* @return    return the max_inlier
+*/
 int gms_matcher::GetInlierMask(vector<bool>& vbInliers, bool WithScale, bool WithRotation) {
 
 	int max_inlier = 0;
 
 	if (!WithScale && !WithRotation)
 	{
-		SetScale(0);
-		max_inlier = run(1);
+		SetScale(0);				//No scaling
+		max_inlier = run(1);		//run(1) indicates no rotation
 		vbInliers = mvbInlierMask;
 		return max_inlier;
 	}
 
 	if (WithRotation && WithScale)
 	{
+
+		//REPEAT FOR ALL 5 SCALES
 		for (int Scale = 0; Scale < 5; Scale++)
 		{
 			SetScale(Scale);
+
+			//REPEAT FOR ALL 8 ROTATION TYPES
 			for (int RotationType = 1; RotationType <= 8; RotationType++)
 			{
 				int num_inlier = run(RotationType);
 
 				if (num_inlier > max_inlier)
 				{
+					//Set the max_inlier
 					vbInliers = mvbInlierMask;
 					max_inlier = num_inlier;
 				}
@@ -356,7 +368,7 @@ int gms_matcher::GetInlierMask(vector<bool>& vbInliers, bool WithScale, bool Wit
 		{
 			SetScale(Scale);
 
-			int num_inlier = run(1);
+			int num_inlier = run(1); //run(1) indicates no rotation
 
 			if (num_inlier > max_inlier)
 			{
@@ -371,6 +383,15 @@ int gms_matcher::GetInlierMask(vector<bool>& vbInliers, bool WithScale, bool Wit
 	return max_inlier;
 }
 
+
+/**
+* @pre       
+* @post      
+* @param     GridType is determined by how the grid is shifted
+*            to ensure that keypoints that fall on the grid border
+*            of the original grid are not excluded
+* @return    
+*/
 void gms_matcher::AssignMatchPairs(int GridType) {
 
 	for (size_t i = 0; i < mNumberMatches; i++)
@@ -401,6 +422,7 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 
 void gms_matcher::VerifyCellPairs(int RotationType) {
 
+	//Set the rotation pattern
 	const int* CurrentRP = mRotationPatterns[RotationType - 1];
 
 	for (int i = 0; i < mGridNumberLeft; i++)
@@ -417,6 +439,7 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 			int* value = mMotionStatistics.ptr<int>(i);
 			if (value[j] > max_number)
 			{
+				//Set the maximum
 				mCellPairs[i] = j;
 				max_number = value[j];
 			}
@@ -433,6 +456,7 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 
 		for (size_t j = 0; j < 9; j++)
 		{
+			//Use the motion kernel (2020 paper, page 1584)
 			int ll = NB9_lt[j];
 			int rr = NB9_rt[CurrentRP[j] - 1];
 			if (ll == -1 || rr == -1)	continue;
@@ -451,12 +475,14 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 
 int gms_matcher::run(int RotationType) {
 
+	// Initialize all matches to false at first
 	mvbInlierMask.assign(mNumberMatches, false);
 
 	// Initialize Motion Statisctics
 	mMotionStatistics = Mat::zeros(mGridNumberLeft, mGridNumberRight, CV_32SC1);
 	mvMatchPairs.assign(mNumberMatches, pair<int, int>(0, 0));
 
+	// Repeat for each of the 4 grid types -- original, shifted x, shifted y, shifted xy
 	for (int GridType = 1; GridType <= 4; GridType++)
 	{
 		// initialize
@@ -473,6 +499,8 @@ int gms_matcher::run(int RotationType) {
 			if (mvMatchPairs[i].first >= 0) {
 				if (mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
 				{
+					// By setting the inlier mask to false initially,
+					// only true matches will be found.
 					mvbInlierMask[i] = true;
 				}
 			}
