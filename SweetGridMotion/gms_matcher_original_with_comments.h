@@ -1,3 +1,6 @@
+// Author: Jiawang Bian, Postdoctoral Researcher
+// https://github.com/JiawangBian/GMS-Feature-Matcher/blob/master/include/gms_matcher.h
+
 #pragma once
 #include <opencv2/opencv.hpp>
 #include <vector>
@@ -7,6 +10,8 @@ using namespace std;
 using namespace cv;
 
 #define THRESH_FACTOR 6
+
+
 
 // 8 possible rotation and each one is 3 X 3 
 const int mRotationPatterns[8][9] = {
@@ -47,11 +52,26 @@ const int mRotationPatterns[8][9] = {
 const double mScaleRatios[5] = { 1.0, 1.0 / 2, 1.0 / sqrt(2.0), sqrt(2.0), 2.0 };
 
 
+
+
+// ++++++++++++++++++++++++++++ GMS MATCHER ++++++++++++++++++++++++++++++  //
 class gms_matcher
 {
 public:
-	// OpenCV Keypoints & Correspond Image Size & Nearest Neighbor Matches 
-	gms_matcher(const vector<KeyPoint>& vkp1, const Size size1, const vector<KeyPoint>& vkp2, const Size size2, const vector<DMatch>& vDMatches)
+
+	/** GMS Matcher
+	* @pre       Two valid images have been opened, and their keypoints
+	*            have been matched.
+	* @post      Normalizes the matches. Creates a grid.
+	* @param	 vkp1 is the keypoints from image 1
+	* @param     size1 is the dimensions of image 1.
+	* @param	 vkp2 is the keypoints from image 2.
+	* @param	 size2 is the dimensions of image 2.
+	* @param	 vDMatches is the matches between the keypoints,
+	*            which is detected through brute force nearest neighbor matching.
+	*/
+	gms_matcher(const vector<KeyPoint>& vkp1, const Size size1, 
+		const vector<KeyPoint>& vkp2, const Size size2, const vector<DMatch>& vDMatches)
 	{
 		// Input initialize
 		NormalizePoints(vkp1, size1, mvP1);
@@ -60,28 +80,28 @@ public:
 		ConvertMatches(vDMatches, mvMatches);
 
 		// Grid initialize
-		mGridSizeLeft = Size(20, 20);
+		mGridSizeLeft = Size(20, 20); // The default grid size is 20 by 20
 		mGridNumberLeft = mGridSizeLeft.width * mGridSizeLeft.height;
 
-		// Initialize the neihbor of left grid 
-		mGridNeighborLeft = Mat::zeros(mGridNumberLeft, 9, CV_32SC1);
-		InitalizeNiehbors(mGridNeighborLeft, mGridSizeLeft);
+		// Initialize the neighbor of left grid 
+		mGridNeighborLeft = Mat::zeros(mGridNumberLeft, 9, CV_32SC1); //rows, columns, and type
+		InitalizeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 	};
 	~gms_matcher() {};
 
 private:
 
-	// Normalized Points
+	// Normalized Points - filled during the NormalizePoints function
 	vector<Point2f> mvP1, mvP2;
 
-	// Matches
+	// Matches - filled with pairs of points during the ConvertMatches function
 	vector<pair<int, int> > mvMatches;
 
 	// Number of Matches
 	size_t mNumberMatches;
 
 	// Grid Size
-	Size mGridSizeLeft, mGridSizeRight;
+	Size mGridSizeLeft, mGridSizeRight; // 20 by 20
 	int mGridNumberLeft;
 	int mGridNumberRight;
 
@@ -113,12 +133,22 @@ public:
 
 	// Get Inlier Mask
 	// Return number of inliers 
-	int GetInlierMask(vector<bool>& vbInliers, bool WithScale = false, bool WithRotation = false);
+	int GetInlierMask(vector<bool>& vbInliers, 
+		bool WithScale = false, bool WithRotation = false);
 
 private:
-
-	// Normalize Key Points to Range(0 - 1)
-	void NormalizePoints(const vector<KeyPoint>& kp, const Size& size, vector<Point2f>& npts) {
+	
+	/** Normalize Key Points to Range(0 - 1)
+	* @pre       Matching was performed between two images.
+	*            DMatch is full of matches.
+	* @post      Converts from DMatch to Match pairs of points
+	* @param	 kp is the keypoints from one image.
+	* @param     size is the dimensions of the image.
+	* @param	 npts will be filled with normalized points from the image.
+	*/
+	void NormalizePoints(const vector<KeyPoint>& kp, 
+		const Size& size, vector<Point2f>& npts) {
+		
 		const size_t numP = kp.size();
 		const int width = size.width;
 		const int height = size.height;
@@ -131,18 +161,35 @@ private:
 		}
 	}
 
-	// Convert OpenCV DMatch to Match (pair<int, int>)
+	/** Convert OpenCV DMatch to Match (pair<int, int>)
+	* @pre       Matching was performed between two images.
+	*            DMatch is full of matches.
+	* @post      Converts from DMatch to Match pairs of points
+	* @param	 vDMatches is a vector of matches from brute force matching.
+	*            It contains query and train indexes.
+	* @param     vMatches is a vector to be filled with pairs of points
+	*/
 	void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& vMatches) {
+		
 		vMatches.resize(mNumberMatches);
 		for (size_t i = 0; i < mNumberMatches; i++)
 		{
+			//Fill vMatches with pairs of points from vDMatches
 			vMatches[i] = pair<int, int>(vDMatches[i].queryIdx, vDMatches[i].trainIdx);
 		}
 	}
 
+	/** Shift the grid a half cell width in the x, y, and xy directions.
+	* @pre       mv1 and mvMatches have been filled.
+	*			 A valid point is passed to the function.
+	* @post      Return the index of the leftmost part of the grid.
+	* @param	 pt is the left point (x, y) coordinates.
+	* @param     type is the orientation (x, y, or xy) to shift the grid over
+	*/
 	int GetGridIndexLeft(const Point2f& pt, int type) {
 		int x = 0, y = 0;
 
+		//NO SHIFTING
 		if (type == 1) {
 			x = floor(pt.x * mGridSizeLeft.width);
 			y = floor(pt.y * mGridSizeLeft.height);
@@ -152,6 +199,7 @@ private:
 			}
 		}
 
+		//SHIFT IN X DIRECTION
 		if (type == 2) {
 			x = floor(pt.x * mGridSizeLeft.width + 0.5);
 			y = floor(pt.y * mGridSizeLeft.height);
@@ -161,6 +209,7 @@ private:
 			}
 		}
 
+		//SHIFT IN THE Y DIRECTION
 		if (type == 3) {
 			x = floor(pt.x * mGridSizeLeft.width);
 			y = floor(pt.y * mGridSizeLeft.height + 0.5);
@@ -170,6 +219,7 @@ private:
 			}
 		}
 
+		//SHIFT IN THE X AND Y DIRECTION
 		if (type == 4) {
 			x = floor(pt.x * mGridSizeLeft.width + 0.5);
 			y = floor(pt.y * mGridSizeLeft.height + 0.5);
@@ -218,7 +268,13 @@ private:
 		return NB9;
 	}
 
-	void InitalizeNiehbors(Mat& neighbor, const Size& GridSize) {
+	/** 
+	* @pre       
+	* @post      
+	* @param	 neighbor is
+	* @param     GridSize is
+	*/
+	void InitalizeNeighbors(Mat& neighbor, const Size& GridSize) {
 		for (int i = 0; i < neighbor.rows; i++)
 		{
 			vector<int> NB9 = GetNB9(i, GridSize);
@@ -227,15 +283,20 @@ private:
 		}
 	}
 
+	/** 
+	* @pre
+	* @post
+	* @param	 Scale is 
+	*/
 	void SetScale(int Scale) {
 		// Set Scale
 		mGridSizeRight.width = mGridSizeLeft.width * mScaleRatios[Scale];
 		mGridSizeRight.height = mGridSizeLeft.height * mScaleRatios[Scale];
 		mGridNumberRight = mGridSizeRight.width * mGridSizeRight.height;
 
-		// Initialize the neihbor of right grid 
+		// Initialize the neighbor of right grid 
 		mGridNeighborRight = Mat::zeros(mGridNumberRight, 9, CV_32SC1);
-		InitalizeNiehbors(mGridNeighborRight, mGridSizeRight);
+		InitalizeNeighbors(mGridNeighborRight, mGridSizeRight);
 	}
 
 	// Run 
@@ -317,6 +378,7 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 		Point2f& lp = mvP1[mvMatches[i].first];
 		Point2f& rp = mvP2[mvMatches[i].second];
 
+		//
 		int lgidx = mvMatchPairs[i].first = GetGridIndexLeft(lp, GridType);
 		int rgidx = -1;
 
