@@ -146,12 +146,13 @@ private:
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
+	// Note   : incremented in the AssignMatchPairs function
 	Mat mMotionStatistics;
 
 	// 
 	vector<int> mNumberPointsInPerCellLeft;
 
-	// Inldex  : grid_idx_left
+	// Index  : grid_idx_left
 	// Value   : grid_idx_right
 	vector<int> mCellPairs;
 
@@ -488,38 +489,49 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 }
 
 
-/**
-* @pre       
-* @post      The right grid index is initialized to -1;
-*            The left grid index is initialized to 
+/** Assign Match Pairs
+* @pre       The public GetInlierMask function called the run function,
+*            which called this function.
+* @post      Get the grid indexes for the pairs of points in every match.
+*            Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
 * @param     GridType is determined by how the grid is shifted
 *            to ensure that keypoints that fall on the grid border
-*            of the original grid are not excluded
-* @return    
+*            of the original grid are not excluded.
 */
 void gms_matcher::AssignMatchPairs(int GridType) {
 
+	//For all the initial matches between the two images (including incorrect matches)
 	for (size_t i = 0; i < mNumberMatches; i++)
 	{
+		// Look at one pair of normalized points from the left and right images
 		Point2f& lp = normalizedPoints1[initialMatches[i].first];
 		Point2f& rp = normalizedPoints2[initialMatches[i].second];
 
-		//Indexes depend on the GridType
+		// Get the grid index for that pair of points.
+		// Index locations depend on the GridType.
+		// Get the grid index for the left point (.first indicates LEFT)
 		int lgidx = mvMatchPairs[i].first = GetGridIndexLeft(lp, GridType);
 		int rgidx = -1;
 
+		// GridType == 1 indicates no movement of the grid position
 		if (GridType == 1)
 		{
+			//Get the grid index for the right point (.second indicates RIGHT)
 			rgidx = mvMatchPairs[i].second = GetGridIndexRight(rp);
 		}
 		else
 		{
+			//Get the grid index for the right point from ........
 			rgidx = mvMatchPairs[i].second;
 		}
 
-		if (lgidx < 0 || rgidx < 0)	continue;
+		//Ensure that neither index is out of bounds.
+		if (lgidx < 0 || rgidx < 0)	continue; 
 
-		mMotionStatistics.at<int>(lgidx, rgidx)++;
+		// Fill in the motion statistics vector for each match
+		mMotionStatistics.at<int>(lgidx, rgidx)++; 
+
+		// Fill in the number of points per cell for the left image
 		mNumberPointsInPerCellLeft[lgidx]++;
 	}
 
@@ -529,7 +541,6 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 * @pre
 * @post
 * @param     RotationType is one of 8 rotation patterns.
-* @return
 */
 void gms_matcher::VerifyCellPairs(int RotationType) {
 
@@ -590,7 +601,7 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 *            will be initialized to false.
 *            As the algorithm goes through each iteration,
 *            more inliers are found and added.
-*            Calls the AssignMatchPairs and VerifyCellPairs functions.
+*            This calls the AssignMatchPairs and VerifyCellPairs functions.
 * @param     RotationType is one of 8 rotation patterns.
 *            This is needed for the VerifyCellPairs method.
 * @return    The number of inliers
@@ -610,11 +621,16 @@ int gms_matcher::run(int RotationType) {
 		// Set motion statistics vector to all 0s
 		mMotionStatistics.setTo(0);
 
-		//
+		// Initialize mCellPairs with -1s for all the cells in the grid
 		mCellPairs.assign(totalNumberOfCellsLeft, -1);
+
+		// Initialize mNumberPointsInPerCellLeft with 0s for all the cells in the grid
 		mNumberPointsInPerCellLeft.assign(totalNumberOfCellsLeft, 0);
 
+		// Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors
 		AssignMatchPairs(GridType);
+
+		// 
 		VerifyCellPairs(RotationType);
 
 		// Mark inliers
