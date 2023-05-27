@@ -1,4 +1,21 @@
-// Author: Jiawang Bian, Postdoctoral Researcher
+// 
+// Original Author: Jiawang Bian, Postdoctoral Researcher
+// 
+// We refactored the following names to be more descriptive:
+//		"mvP1" as "normalizedPoints1" and "mvP2" as "normalizedPoins2"
+//      "mvMatches" and "vMatches" (in ConvertMatches) to be "initialMatches"
+//		"mGridNumberLeft" as "totalNumberOfCellsLeft"
+//      "mGridNumberRight" as "totalNumberOfCellsRight"
+// 
+// We considered renaming "mGridSizeRight" and "mGridSizeLeft", but
+//      just remember that any time you see "left" it is referring to the 
+//      first image / first grid and any time you see "right" it is referring
+//      to the second image / second grid.
+// 
+//		For the scale and rotation changes, the grid of the first image 
+//      remains fixed in place, while the grid of the second image 
+//      (the "right" image) will alter according to scale and rotation changes.
+// 
 // https://github.com/JiawangBian/GMS-Feature-Matcher/blob/master/include/gms_matcher.h
 
 #pragma once
@@ -10,8 +27,6 @@ using namespace std;
 using namespace cv;
 
 #define THRESH_FACTOR 6
-
-
 
 // 8 possible rotation and each one is 3 X 3 
 const int mRotationPatterns[8][9] = {
@@ -63,6 +78,7 @@ public:
 	* @pre       Two valid images have been opened, and their keypoints
 	*            have been matched.
 	* @post      Normalizes the matches. Creates a grid.
+	*            Initializes the neighbors
 	* @param	 vkp1 is the keypoints from image 1
 	* @param     size1 is the dimensions of image 1.
 	* @param	 vkp2 is the keypoints from image 2.
@@ -73,18 +89,22 @@ public:
 	gms_matcher(const vector<KeyPoint>& vkp1, const Size size1, 
 		const vector<KeyPoint>& vkp2, const Size size2, const vector<DMatch>& vDMatches)
 	{
-		// Input initialize
-		NormalizePoints(vkp1, size1, mvP1);
-		NormalizePoints(vkp2, size2, mvP2);
-		mNumberMatches = vDMatches.size();
-		ConvertMatches(vDMatches, mvMatches);
+		// Input initialization
+		NormalizePoints(vkp1, size1, normalizedPoints1); //Fills normalizedPoints1
+		NormalizePoints(vkp2, size2, normalizedPoints2); //Fills normalizedPoints2
+		mNumberMatches = vDMatches.size();		//How many matches were found?
+		ConvertMatches(vDMatches, initialMatches);	//Fill initialMatches with pairs of points
 
-		// Grid initialize
-		mGridSizeLeft = Size(20, 20); // The default grid size is 20 by 20
-		mGridNumberLeft = mGridSizeLeft.width * mGridSizeLeft.height;
+		// Grid size initialization
+		mGridSizeLeft = Size(20, 20); // The default grid size for the first image is 20 by 20
+		
+		// Total number of cells in the grid
+		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height; 
 
-		// Initialize the neighbor of left grid 
-		mGridNeighborLeft = Mat::zeros(mGridNumberLeft, 9, CV_32SC1); //rows, columns, and type
+		// Initialize the neighbors of the left grid / image
+		// The zeros function takes in the number of rows, columns, and data type
+		// and fills the matrix with 0s.
+		mGridNeighborLeft = Mat::zeros(totalNumberOfCellsLeft, 9, CV_32SC1);
 		InitalizeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 	};
 	~gms_matcher() {};
@@ -92,18 +112,18 @@ public:
 private:
 
 	// Normalized Points - filled during the NormalizePoints function
-	vector<Point2f> mvP1, mvP2;
+	vector<Point2f> normalizedPoints1, normalizedPoints2;
 
 	// Matches - filled with pairs of points during the ConvertMatches function
-	vector<pair<int, int> > mvMatches;
+	vector<pair<int, int> > initialMatches;
 
 	// Number of Matches
 	size_t mNumberMatches;
 
-	// Grid Size
+	// Grid Size - 20 by 20
 	Size mGridSizeLeft, mGridSizeRight; // 20 by 20
-	int mGridNumberLeft;
-	int mGridNumberRight;
+	int totalNumberOfCellsLeft;
+	int totalNumberOfCellsRight;
 
 	// x	  : left grid idx
 	// y      :  right grid idx
@@ -126,8 +146,8 @@ private:
 	vector<bool> mvbInlierMask;
 
 	//
-	Mat mGridNeighborLeft;
-	Mat mGridNeighborRight;
+	Mat mGridNeighborLeft; //Initialized in the GMS constructor
+	Mat mGridNeighborRight; //Initialized in the SetScale function
 
 public:
 
@@ -138,53 +158,59 @@ public:
 
 private:
 	
-	/** Normalize Key Points to Range(0 - 1)
+	/** Normalize Key Points to Range (0 - 1)
 	* @pre       Matching was performed between two images.
-	*            DMatch is full of matches.
-	* @post      Converts from DMatch to Match pairs of points
+	*            This method will be called twice,
+	*            to normalize the points for both images.
+	* @post      normalize the points between 0 and 1
+	*			 and fill one of the two normalizedPoints vectors.
 	* @param	 kp is the keypoints from one image.
-	* @param     size is the dimensions of the image.
-	* @param	 npts will be filled with normalized points from the image.
+	* @param     size is the dimensions of one image.
+	* @param	 npts will be filled with normalized points from one image.
 	*/
 	void NormalizePoints(const vector<KeyPoint>& kp, 
 		const Size& size, vector<Point2f>& npts) {
 		
-		const size_t numP = kp.size();
-		const int width = size.width;
-		const int height = size.height;
-		npts.resize(numP);
+		const size_t numP = kp.size();  //How many keypoints were there?
+		const int width = size.width;   //What was the width of the image?
+		const int height = size.height; //What was the heigth of the image?
+		npts.resize(numP);              //Resize the normalizedPoints vector to be the same
+		                                // size as the original keypoint vector
 
 		for (size_t i = 0; i < numP; i++)
 		{
-			npts[i].x = kp[i].pt.x / width;
-			npts[i].y = kp[i].pt.y / height;
+			npts[i].x = kp[i].pt.x / width;	  //Fill one of the normalizedPoints vectors
+			npts[i].y = kp[i].pt.y / height;  //Fill one of the normalizedPoints vectors
 		}
 	}
 
 	/** Convert OpenCV DMatch to Match (pair<int, int>)
-	* @pre       Matching was performed between two images.
+	* @pre       Brute force matching was performed between two images.
 	*            DMatch is full of matches.
-	* @post      Converts from DMatch to Match pairs of points
-	* @param	 vDMatches is a vector of matches from brute force matching.
+	* @post      Converts from a DMatch vector to a vector of <pair<int, int>> of points
+	*            so that the algorithm can use pairs of points instead.
+	* @param	 vDMatches is a vector of matches from the brute force matching.
 	*            It contains query and train indexes.
-	* @param     vMatches is a vector to be filled with pairs of points
+	* @param     initialMatches is a vector to be filled with pairs of points
 	*/
-	void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& vMatches) {
+	void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& initialMatches) {
 		
-		vMatches.resize(mNumberMatches);
+		initialMatches.resize(mNumberMatches);
 		for (size_t i = 0; i < mNumberMatches; i++)
 		{
-			//Fill vMatches with pairs of points from vDMatches
-			vMatches[i] = pair<int, int>(vDMatches[i].queryIdx, vDMatches[i].trainIdx);
+			//Fill initialMatches with pairs of points from vDMatches
+			initialMatches[i] = pair<int, int>(vDMatches[i].queryIdx, vDMatches[i].trainIdx);
 		}
 	}
 
 	/** Shift the grid a half cell width in the x, y, and xy directions.
-	* @pre       mv1 and mvMatches have been filled.
+	* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
 	*			 A valid point is passed to the function.
-	* @post      Return the index of the leftmost part of the grid.
+	* @post      Return the index of the left image.
+	*            
 	* @param	 pt is the left point (x, y) coordinates.
 	* @param     type is the orientation (x, y, or xy) to shift the grid over
+	* @return    x + y * mGridSizeLeft.width
 	*/
 	int GetGridIndexLeft(const Point2f& pt, int type) {
 		int x = 0, y = 0;
@@ -229,9 +255,16 @@ private:
 			}
 		}
 
+		//Return the index of the leftmost point of the grid
 		return x + y * mGridSizeLeft.width;
 	}
 
+	/** Return the
+	* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
+	*			 A valid point is passed to the function.
+	* @post      Return the index of the rightmost part of the grid.
+	* @param	 pt is the right point (x, y) coordinates.
+	*/
 	int GetGridIndexRight(const Point2f& pt) {
 		int x = floor(pt.x * mGridSizeRight.width);
 		int y = floor(pt.y * mGridSizeRight.height);
@@ -292,10 +325,10 @@ private:
 		// Set Scale
 		mGridSizeRight.width = mGridSizeLeft.width * mScaleRatios[Scale];
 		mGridSizeRight.height = mGridSizeLeft.height * mScaleRatios[Scale];
-		mGridNumberRight = mGridSizeRight.width * mGridSizeRight.height;
+		totalNumberOfCellsRight = mGridSizeRight.width * mGridSizeRight.height;
 
 		// Initialize the neighbor of right grid 
-		mGridNeighborRight = Mat::zeros(mGridNumberRight, 9, CV_32SC1);
+		mGridNeighborRight = Mat::zeros(totalNumberOfCellsRight, 9, CV_32SC1);
 		InitalizeNeighbors(mGridNeighborRight, mGridSizeRight);
 	}
 
@@ -305,7 +338,8 @@ private:
 
 /** 
 * @pre
-* @post
+* @post      Run either without scale or rotation, 
+*            with scale, with rotation, with both scale and rotation.
 * @param	 
 * @param     
 * @return    return the max_inlier
@@ -386,7 +420,8 @@ int gms_matcher::GetInlierMask(vector<bool>& vbInliers, bool WithScale, bool Wit
 
 /**
 * @pre       
-* @post      
+* @post      The right grid index is initialized to -1;
+*            The left grid index is initialized to 
 * @param     GridType is determined by how the grid is shifted
 *            to ensure that keypoints that fall on the grid border
 *            of the original grid are not excluded
@@ -396,10 +431,10 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 
 	for (size_t i = 0; i < mNumberMatches; i++)
 	{
-		Point2f& lp = mvP1[mvMatches[i].first];
-		Point2f& rp = mvP2[mvMatches[i].second];
+		Point2f& lp = normalizedPoints1[initialMatches[i].first];
+		Point2f& rp = normalizedPoints2[initialMatches[i].second];
 
-		//
+		//Indexes depend on the GridType
 		int lgidx = mvMatchPairs[i].first = GetGridIndexLeft(lp, GridType);
 		int rgidx = -1;
 
@@ -420,12 +455,18 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 
 }
 
+/**
+* @pre
+* @post
+* @param     RotationType is one of 8 rotation patterns.
+* @return
+*/
 void gms_matcher::VerifyCellPairs(int RotationType) {
 
 	//Set the rotation pattern
 	const int* CurrentRP = mRotationPatterns[RotationType - 1];
 
-	for (int i = 0; i < mGridNumberLeft; i++)
+	for (int i = 0; i < totalNumberOfCellsLeft; i++)
 	{
 		if (sum(mMotionStatistics.row(i))[0] == 0)
 		{
@@ -434,7 +475,7 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 		}
 
 		int max_number = 0;
-		for (int j = 0; j < mGridNumberRight; j++)
+		for (int j = 0; j < totalNumberOfCellsRight; j++)
 		{
 			int* value = mMotionStatistics.ptr<int>(i);
 			if (value[j] > max_number)
@@ -473,13 +514,23 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 	}
 }
 
+/** RUN GMS
+* @pre
+* @post      All inliers in mvbInlierMask
+*            will be initialized to false.
+*            As the algorithm goes through each iteration,
+*            more inliers are found and added.
+* @param     RotationType is one of 8 rotation patterns.
+*            This is needed for the VerifyCellPairs method.
+* @return    The number of inliers
+*/
 int gms_matcher::run(int RotationType) {
 
 	// Initialize all matches to false at first
 	mvbInlierMask.assign(mNumberMatches, false);
 
 	// Initialize Motion Statisctics
-	mMotionStatistics = Mat::zeros(mGridNumberLeft, mGridNumberRight, CV_32SC1);
+	mMotionStatistics = Mat::zeros(totalNumberOfCellsLeft, totalNumberOfCellsRight, CV_32SC1);
 	mvMatchPairs.assign(mNumberMatches, pair<int, int>(0, 0));
 
 	// Repeat for each of the 4 grid types -- original, shifted x, shifted y, shifted xy
@@ -487,8 +538,8 @@ int gms_matcher::run(int RotationType) {
 	{
 		// initialize
 		mMotionStatistics.setTo(0);
-		mCellPairs.assign(mGridNumberLeft, -1);
-		mNumberPointsInPerCellLeft.assign(mGridNumberLeft, 0);
+		mCellPairs.assign(totalNumberOfCellsLeft, -1);
+		mNumberPointsInPerCellLeft.assign(totalNumberOfCellsLeft, 0);
 
 		AssignMatchPairs(GridType);
 		VerifyCellPairs(RotationType);
