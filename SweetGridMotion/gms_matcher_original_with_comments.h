@@ -1,16 +1,22 @@
 // 
 // Original Author: Jiawang Bian, Postdoctoral Researcher
 // 
+// The constructor and GetInlierMask are public
+// all other methods are private.
+// 
 // We refactored the following names to be more descriptive:
 //		"mvP1" as "normalizedPoints1" and "mvP2" as "normalizedPoins2"
 //      "mvMatches" and "vMatches" (in ConvertMatches) to be "initialMatches"
 //		"mGridNumberLeft" as "totalNumberOfCellsLeft"
 //      "mGridNumberRight" as "totalNumberOfCellsRight"
+//      "type" to be "GridType" in the GetGridIndexLeft function
+//      "InitalizeNeighbors" to "InitializeNeighbors" (fixed typo)
 // 
-// We considered renaming "mGridSizeRight" and "mGridSizeLeft", but
-//      just remember that any time you see "left" it is referring to the 
-//      first image / first grid and any time you see "right" it is referring
-//      to the second image / second grid.
+// We considered renaming "mGridSizeRight" and "mGridSizeLeft".
+//      Just remember that any time you see 
+//      "left" it is referring to the first image / first grid
+//      and any time you see 
+//      "right" it is referring to the second image / second grid.
 // 
 //		For the scale and rotation changes, the grid of the first image 
 //      remains fixed in place, while the grid of the second image 
@@ -79,33 +85,35 @@ public:
 	*            have been matched.
 	* @post      Normalizes the matches. Creates a grid.
 	*            Initializes the neighbors
-	* @param	 vkp1 is the keypoints from image 1
-	* @param     size1 is the dimensions of image 1.
-	* @param	 vkp2 is the keypoints from image 2.
-	* @param	 size2 is the dimensions of image 2.
+	* @param	 vkp1 is the keypoints from image 1 (left image)
+	* @param     size1 is the dimensions of image 1 (left image).
+	* @param	 vkp2 is the keypoints from image 2 (right image).
+	* @param	 size2 is the dimensions of image 2 (right image).
 	* @param	 vDMatches is the matches between the keypoints,
 	*            which is detected through brute force nearest neighbor matching.
 	*/
 	gms_matcher(const vector<KeyPoint>& vkp1, const Size size1, 
 		const vector<KeyPoint>& vkp2, const Size size2, const vector<DMatch>& vDMatches)
 	{
-		// Input initialization
+		// Input initialization (keypoints and matches)
 		NormalizePoints(vkp1, size1, normalizedPoints1); //Fills normalizedPoints1
 		NormalizePoints(vkp2, size2, normalizedPoints2); //Fills normalizedPoints2
-		mNumberMatches = vDMatches.size();		//How many matches were found?
+		mNumberMatches = vDMatches.size();				 //How many matches were found?
 		ConvertMatches(vDMatches, initialMatches);	//Fill initialMatches with pairs of points
 
 		// Grid size initialization
 		mGridSizeLeft = Size(20, 20); // The default grid size for the first image is 20 by 20
 		
-		// Total number of cells in the grid
+		// Total number of cells in the grid (20 * 20)
 		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height; 
 
-		// Initialize the neighbors of the left grid / image
+		// The mGridNeighborLeft matrix is size 400 by 9 by default
 		// The zeros function takes in the number of rows, columns, and data type
 		// and fills the matrix with 0s.
 		mGridNeighborLeft = Mat::zeros(totalNumberOfCellsLeft, 9, CV_32SC1);
-		InitalizeNeighbors(mGridNeighborLeft, mGridSizeLeft);
+
+		// Fill in the matrixes of the 400 by 9 cells with
+		InitializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 	};
 	~gms_matcher() {};
 
@@ -145,9 +153,9 @@ private:
 	// Inlier Mask for output
 	vector<bool> mvbInlierMask;
 
-	//
-	Mat mGridNeighborLeft; //Initialized in the GMS constructor
-	Mat mGridNeighborRight; //Initialized in the SetScale function
+	// All possible neighbors for all possible cells in each grid (left and right grid / image)
+	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
+	Mat mGridNeighborRight; //Initialized in the SetScale function - ___ by 9 matrix, depends on scale
 
 public:
 
@@ -171,16 +179,16 @@ private:
 	void NormalizePoints(const vector<KeyPoint>& kp, 
 		const Size& size, vector<Point2f>& npts) {
 		
-		const size_t numP = kp.size();  //How many keypoints were there?
-		const int width = size.width;   //What was the width of the image?
-		const int height = size.height; //What was the heigth of the image?
-		npts.resize(numP);              //Resize the normalizedPoints vector to be the same
+		const size_t numP = kp.size();  // How many keypoints were there?
+		const int width = size.width;   // What was the width of the image?
+		const int height = size.height; // What was the heigth of the image?
+		npts.resize(numP);              // Resize the normalizedPoints vector to be the same
 		                                // size as the original keypoint vector
 
 		for (size_t i = 0; i < numP; i++)
 		{
-			npts[i].x = kp[i].pt.x / width;	  //Fill one of the normalizedPoints vectors
-			npts[i].y = kp[i].pt.y / height;  //Fill one of the normalizedPoints vectors
+			npts[i].x = kp[i].pt.x / width;	  // Fill one of the normalizedPoints vectors
+			npts[i].y = kp[i].pt.y / height;  // Fill one of the normalizedPoints vectors
 		}
 	}
 
@@ -203,20 +211,21 @@ private:
 		}
 	}
 
-	/** Shift the grid a half cell width in the x, y, and xy directions.
+	/** Return the index for the left grid / image
 	* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
 	*			 A valid point is passed to the function.
-	* @post      Return the index of the left image.
-	*            
+	* @post      Shift the left image's grid a half cell width in the x, y, and xy directions,
+	*            depending on the GridType
+	*		     Return the starting index of the left image's grid.
 	* @param	 pt is the left point (x, y) coordinates.
-	* @param     type is the orientation (x, y, or xy) to shift the grid over
+	* @param     GridType is the direction (x, y, or xy) to shift the grid over
 	* @return    x + y * mGridSizeLeft.width
 	*/
-	int GetGridIndexLeft(const Point2f& pt, int type) {
+	int GetGridIndexLeft(const Point2f& pt, int GridType) {
 		int x = 0, y = 0;
 
 		//NO SHIFTING
-		if (type == 1) {
+		if (GridType == 1) {
 			x = floor(pt.x * mGridSizeLeft.width);
 			y = floor(pt.y * mGridSizeLeft.height);
 
@@ -226,7 +235,7 @@ private:
 		}
 
 		//SHIFT IN X DIRECTION
-		if (type == 2) {
+		if (GridType == 2) {
 			x = floor(pt.x * mGridSizeLeft.width + 0.5);
 			y = floor(pt.y * mGridSizeLeft.height);
 
@@ -236,7 +245,7 @@ private:
 		}
 
 		//SHIFT IN THE Y DIRECTION
-		if (type == 3) {
+		if (GridType == 3) {
 			x = floor(pt.x * mGridSizeLeft.width);
 			y = floor(pt.y * mGridSizeLeft.height + 0.5);
 
@@ -246,7 +255,7 @@ private:
 		}
 
 		//SHIFT IN THE X AND Y DIRECTION
-		if (type == 4) {
+		if (GridType == 4) {
 			x = floor(pt.x * mGridSizeLeft.width + 0.5);
 			y = floor(pt.y * mGridSizeLeft.height + 0.5);
 
@@ -259,10 +268,10 @@ private:
 		return x + y * mGridSizeLeft.width;
 	}
 
-	/** Return the
+	/** Return the index for the right grid / image
 	* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
 	*			 A valid point is passed to the function.
-	* @post      Return the index of the rightmost part of the grid.
+	* @post      Return the starting index of the right image's grid.
 	* @param	 pt is the right point (x, y) coordinates.
 	*/
 	int GetGridIndexRight(const Point2f& pt) {
@@ -278,40 +287,72 @@ private:
 	// Verify Cell Pairs
 	void VerifyCellPairs(int RotationType);
 
-	// Get Neighbor 9
+	/** Get Neighbor 9
+	* @pre       There is a grid.
+	* @post      Fill in NB9 with indexes for its neighbors.
+	* @param     GridSize is the dimensions of the grid (20 by 20)
+	*/
 	vector<int> GetNB9(const int idx, const Size& GridSize) {
-		vector<int> NB9(9, -1);
 
-		int idx_x = idx % GridSize.width;
-		int idx_y = idx / GridSize.width;
+		//A vector of 9 slots filled with -1's
+		vector<int> NB9(9, -1); 
 
+		//Find out what cell to look at within the 20 by 20 grid
+		int idx_x = idx % GridSize.width; //What part of the grid - in the x dimension?
+		int idx_y = idx / GridSize.width; //What part of the grid - in the y dimension?
+
+		//Repeat for yi equals -1, 0, and 1
 		for (int yi = -1; yi <= 1; yi++)
 		{
+			//Repeat for xi equals -1, 0, and 1
 			for (int xi = -1; xi <= 1; xi++)
 			{
-				int idx_xx = idx_x + xi;
-				int idx_yy = idx_y + yi;
 
-				if (idx_xx < 0 || idx_xx >= GridSize.width || idx_yy < 0 || idx_yy >= GridSize.height)
+				//Look left, center, right and up, center, down for each cell
+				int idx_xx = idx_x + xi; // -1 would be left; 0 is center; 1 is right
+				int idx_yy = idx_y + yi; // -1 would be up; 0 is center; 1 is down
+
+				//Make sure you do not go out of bounds
+				if (idx_xx < 0 || 
+					idx_xx >= GridSize.width || 
+					idx_yy < 0 || 
+					idx_yy >= GridSize.height)
 					continue;
 
+				// Fill in the NB9 vector
+				// When xi is -1 and yi is -1, this indexes to NB9[0]
+				// When xi is  0 and yi is -1, this indexes to NB9[1]
+				// When xi is  1 and yi is -1, this indexes to NB9[2]
+				// When xi is -1 and yi is  0, this indexes to NB9[3]
+				// When xi is  0 and yi is  0, this indexes to NB9[4]
+				// When xi is  1 and yi is  0, this indexes to NB9[5]
+				// When xi is -1 and yi is  1, this indexes to NB9[6]
+				// When xi is  0 and yi is  1, this indexes to NB9[7]
+				// When xi is  1 and yi is  1, this indexes to NB9[8]
 				NB9[xi + 4 + yi * 3] = idx_xx + idx_yy * GridSize.width;
 			}
 		}
 		return NB9;
 	}
 
-	/** 
-	* @pre       
-	* @post      
-	* @param	 neighbor is
-	* @param     GridSize is
+	/** Initialize the neighbor matrices.
+	* @pre       The GridSize is known.
+	* @post      Fill the neighbors matrices.
+	* @param	 neighbor is the matrix of neighbors (400 by 9) for one grid / image
+	* @param     GridSize is the dimensions of the grid (20 by 20)
 	*/
-	void InitalizeNeighbors(Mat& neighbor, const Size& GridSize) {
+	void InitializeNeighbors(Mat& neighbor, const Size& GridSize) {
+
+		//Repeat for ALL CELLS in the grid (400 cells if 20 by 20)
 		for (int i = 0; i < neighbor.rows; i++)
 		{
+			// Grab the neighbors for the cell
 			vector<int> NB9 = GetNB9(i, GridSize);
+
+			// The data pointer points to the neighbor
 			int* data = neighbor.ptr<int>(i);
+
+			// data is the destination; NB9 is the source to copy over
 			memcpy(data, &NB9[0], sizeof(int) * 9);
 		}
 	}
@@ -322,14 +363,15 @@ private:
 	* @param	 Scale is 
 	*/
 	void SetScale(int Scale) {
+
 		// Set Scale
 		mGridSizeRight.width = mGridSizeLeft.width * mScaleRatios[Scale];
 		mGridSizeRight.height = mGridSizeLeft.height * mScaleRatios[Scale];
 		totalNumberOfCellsRight = mGridSizeRight.width * mGridSizeRight.height;
 
-		// Initialize the neighbor of right grid 
+		// Initialize the neighbors of right grid 
 		mGridNeighborRight = Mat::zeros(totalNumberOfCellsRight, 9, CV_32SC1);
-		InitalizeNeighbors(mGridNeighborRight, mGridSizeRight);
+		InitializeNeighbors(mGridNeighborRight, mGridSizeRight);
 	}
 
 	// Run 
@@ -536,8 +578,10 @@ int gms_matcher::run(int RotationType) {
 	// Repeat for each of the 4 grid types -- original, shifted x, shifted y, shifted xy
 	for (int GridType = 1; GridType <= 4; GridType++)
 	{
-		// initialize
+		// Set motion statistics vector to all 0s
 		mMotionStatistics.setTo(0);
+
+		//
 		mCellPairs.assign(totalNumberOfCellsLeft, -1);
 		mNumberPointsInPerCellLeft.assign(totalNumberOfCellsLeft, 0);
 
