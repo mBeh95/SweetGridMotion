@@ -11,9 +11,9 @@
 //      "mGridNumberRight" as "totalNumberOfCellsRight"
 //      "type" to be "GridType" in the GetGridIndexLeft function
 //      "InitalizeNeighbors" to "InitializeNeighbors" (fixed typo)
-//      "vbInliers" to "inliersToReturn
+//      "vbInliers" to "inliersToReturn"
 // 
-// We considered renaming "mGridSizeRight" and "mGridSizeLeft".
+// We considered renaming "mGridSizeRight" and "mGridSizeLeft" but decided to keep them the same.
 //      Just remember that any time you see 
 //      "left" it is referring to the first image / first grid
 //      and any time you see 
@@ -104,6 +104,7 @@ public:
 		ConvertMatches(vDMatches, initialMatches);			//Fill initialMatches with pairs of points
 
 		// Grid size initialization
+		// Note that mGridSizeLeft has a width and a height
 		mGridSizeLeft = Size(20, 20); // The default grid size for the first image is 20 by 20
 		
 		// Total number of cells in the grid (20 * 20)
@@ -133,7 +134,10 @@ private:
 	size_t mNumberMatches;
 
 	// Grid Size - 20 by 20
-	Size mGridSizeLeft, mGridSizeRight; // 20 by 20
+	// Note: left is the first image; right is the second image
+	// mGridSizeLeft has a width and a height -- 20 by 20 by default
+	// mGridSizeRight has a width and a height too -- 20 by 20
+	Size mGridSizeLeft, mGridSizeRight;
 
 	// How many cells total are in the left image's grid?
 	int totalNumberOfCellsLeft;
@@ -141,13 +145,17 @@ private:
 	// How many cells total are in the right image's grid?
 	int totalNumberOfCellsRight;
 
+	// All possible neighbors for all possible cells in each grid (left and right grid / image)
+	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
+	Mat mGridNeighborRight; //Initialized in the SetScale function from GetInlierMask - depends on scale
+
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
 	// Note   : incremented in the AssignMatchPairs function
 	Mat mMotionStatistics;
 
-	// 
+	// incremented in the AssignMatchPairs function
 	vector<int> mNumberPointsInPerCellLeft;
 
 	// mCellPairs - a one-dimensional vector that holds an index to the RIGHT image if there is a match.
@@ -169,9 +177,7 @@ private:
 	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
 
-	// All possible neighbors for all possible cells in each grid (left and right grid / image)
-	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
-	Mat mGridNeighborRight; //Initialized in the SetScale function - ___ by 9 matrix, depends on scale
+
 
 public:
 
