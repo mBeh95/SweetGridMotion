@@ -206,7 +206,6 @@ private:
 		const int width = size.width;   // What was the width of the image?
 		const int height = size.height; // What was the heigth of the image?
 
-
 		for (size_t i = 0; i < numP; i++)
 		{
 			npts[i].x = kp[i].pt.x / width;	  // Fill one of the normalizedPoints vectors
