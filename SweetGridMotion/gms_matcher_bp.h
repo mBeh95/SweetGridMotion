@@ -181,7 +181,7 @@ private:
 		npts.resize(numP);              // Resize the normalizedPoints vector to be the same
 		                                // size as the original keypoint vector
 		const int width = size.width;   // What was the width of the image?
-		const int height = size.height; // What was the heigth of the image?
+		const int height = size.height; // What was the height of the image?
 
 		for (size_t i = 0; i < numP; i++)
 		{
