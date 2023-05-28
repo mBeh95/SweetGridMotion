@@ -18,7 +18,7 @@
 //      "mvMatches" and "vMatches" (in convertMatches) to be "initialMatches"
 //		"mGridNumberLeft" as "totalNumberOfCellsLeft"
 //      "mGridNumberRight" as "totalNumberOfCellsRight"
-//      "type" to be "gridType" in the getGridIndexLeft function
+//      "type" to be "gridType" (in the getGridIndexLeft function)
 //      "initializeNeighbors" to "initializeNeighbors" (fixed typo)
 //      "vbInliers" to "inliersToReturn"
 // 
