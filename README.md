@@ -40,6 +40,8 @@ We started by commenting on the code to fully understand how GMS works.
 > gms_matcher_bp.h – Breanna Powell
 
 ## Setup
+> You will need Visual Studio Community Edition 2022
+
 > You will need CMake
 
 > You will need OpenCV
