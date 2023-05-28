@@ -1,5 +1,13 @@
 # SweetGridMotion
 
+This project builds off of the work published as 
+*    GMS: Grid-based Motion Statistics for Fast, Ultra-robust Feature Correspondence.
+*    JiaWang Bian, Wen-Yan Lin, Yasuyuki Matsushita, Sai-Kit Yeung, Tan Dat Nguyen, Ming-Ming Cheng
+*    IEEE CVPR, 2017
+*    ProjectPage: http://jwbian.net/gms
+
+Our goal is to improve the algorithm.
+
 ## Process
 We started by commenting on the code to fully understand how GMS works.
 
