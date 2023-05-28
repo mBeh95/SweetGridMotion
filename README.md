@@ -11,13 +11,15 @@ We saved that as gms_matcher_original_with_comments.h
 
 2) Next, we found the version of GMS that is implemented in OpenCV.
 
+https://docs.opencv.org/3.4/db/dd9/group__xfeatures2d__match.html
+
 OpenCV did a little refactoring, just cleaning up a few for loops and changing the naming to camel case.
 
 We made a copy of that called gms.cpp
 
 We made another copy of that and called it gms_commented_refactored.cpp
 
-Then we moved the comments from the .h file over to the .cpp file.
+Then we moved the comments from the .h file over to the .cpp file and made some small edits to refactor the code.
 
 There were also a few typos that we caught from the original code, including "initialize" as "initalize" and "Statistics" as "Statisctics".
 
