@@ -9,7 +9,8 @@
 *    ProjectPage: http://jwbian.net/gms
 *********************************************************************/
 
-// The constructor and GetInlierMask are public
+// Editors: Breanna Powell and Prarin Behdarvandian 
+// The constructor, getInlierMask, and matchGMS are public
 // all other methods are private.
 // 
 // We refactored the following names to be more descriptive:
@@ -802,8 +803,24 @@ void GMSMatcher::verifyCellPairs(const int rotationType)
     }
 }
 
-void matchGMS( const Size& size1, const Size& size2, const vector<KeyPoint>& keypoints1, const vector<KeyPoint>& keypoints2,
-               const vector<DMatch>& matches1to2, vector<DMatch>& matchesGMS, const bool withRotation, const bool withScale,
+
+/** matchGMS
+* @pre       Two valid images exist. Keypoints were detected. Matches were made between the two images.
+* @post      Performs GMS matching and fills matchesGMS with good matches.
+* @param     size1 is the size of image 1 (the left image)
+* @param     size2 is the size of image 2 (the right image)
+* @param     keypoints1 is the keypoints that were detected from image 1.
+* @param     keypoints2 is the keypoints that were detected from image 2.
+* @param     matches1to2 are the initial matches found.
+* @param     matchesGMS is a DMatch vector to fill with good matches as matchGMS is performed.
+* @param     withRotation indicates whether image 2 has some rotation.
+* @param     withScale indicates whether image 2 has some scale.
+* @param     thresholdFactor if higher, means fewer matches are found.
+*/
+void matchGMS( const Size& size1, const Size& size2, 
+               const vector<KeyPoint>& keypoints1, const vector<KeyPoint>& keypoints2,
+               const vector<DMatch>& matches1to2, vector<DMatch>& matchesGMS, 
+               const bool withRotation, const bool withScale,
                const double thresholdFactor )
 {
     GMSMatcher gms(keypoints1, size1, keypoints2, size2, matches1to2, thresholdFactor);
@@ -812,6 +829,8 @@ void matchGMS( const Size& size1, const Size& size2, const vector<KeyPoint>& key
 
     matchesGMS.clear();
     for (size_t i = 0; i < inlierMask.size(); i++) {
+
+        // If the match was a true match, add it to the matchesGMS vector
         if (inlierMask[i])
             matchesGMS.push_back(matches1to2[i]);
     }
