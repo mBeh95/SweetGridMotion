@@ -179,7 +179,22 @@ private:
 
 public:
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
+	/** Get the inliers between two images
+	* @pre       The GetInlierMask public method is called.
+	*
+	* @post      This public method will run GMS.
+	*            Depending on the settings provided when the GetInlierMask is called,
+	*            this will either run without scale or rotation,
+	*            with scale OR with rotation, or with BOTH scale AND rotation,
+	*
+	*            Fill the inliersToReturn vector with true correspondences.
+	*            Return the count of inliers found.
+	*
+	* @param	 inliersToReturn is the true correspondences between the images
+	* @param     WithScale if true indicates the 2nd image is scaled
+	* @param     WithRotation if true indicates the 2nd image is rotated
+	* @return    return the max_inlier (count of inliers found)
+	*/
 	int GetInlierMask(vector<bool>& inliersToReturn, 
 		bool WithScale = false, bool WithRotation = false);
 
@@ -202,7 +217,7 @@ private:
 		npts.resize(numP);              // Resize the normalizedPoints vector to be the same
 		                                // size as the original keypoint vector
 		const int width = size.width;   // What was the width of the image?
-		const int height = size.height; // What was the heigth of the image?
+		const int height = size.height; // What was the height of the image?
 
 		for (size_t i = 0; i < numP; i++)
 		{
@@ -300,10 +315,24 @@ private:
 		return x + y * mGridSizeRight.width;
 	}
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
+	/** Assign Match Pairs
+	* @pre       The public GetInlierMask function called the run function,
+	*            which called this function.
+	* @post      Get the grid indexes for the pairs of points in every match.
+	*            Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+	*            Fill in the mvMatchPairs[i].first and mvMatchPairs[i].second points.
+	* @param     GridType is determined by how the grid is shifted
+	*            to ensure that keypoints that fall on the grid border
+	*            of the original grid are not excluded.
+	*/
 	void AssignMatchPairs(int GridType);
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
+	/** Verify Cell Pairs
+	* @pre       AssignMatchPairs was called to fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+	* @post      Sets mCellPairs to -1 if no matches were found between a cell in the left and a cell in the right.
+	*            Sets mCellPairs[i] to j (the index of the cell in the right image) if there is a match.
+	* @param     RotationType is one of 8 rotation patterns.
+	*/
 	void VerifyCellPairs(int RotationType);
 
 	/** Get Neighbor 9
@@ -402,7 +431,17 @@ private:
 	
 	}
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
+	/** RUN GMS
+	* @pre       run is called from the public GetInlierMask function.
+	* @post      All inliers in mvbInlierMask
+	*            will be initialized to false.
+	*            As the algorithm goes through each iteration,
+	*            more inliers are found and added.
+	*            This calls the AssignMatchPairs and VerifyCellPairs functions.
+	* @param     RotationType is one of 8 rotation patterns.
+	*            This is needed for the VerifyCellPairs method.
+	* @return    The number of inliers
+	*/
 	int run(int RotationType);
 
 };
