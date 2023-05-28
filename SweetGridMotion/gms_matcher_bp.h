@@ -62,7 +62,7 @@ public:
 	/** GMS Matcher
 	* @pre       Two valid images have been opened, and their keypoints
 	*            have been matched.
-	* @post      Normalizes the keypoints between the images. 
+	* @post      Normalizes the keypoints between the images.
 	*            Converts the matches to pairs of points.
 	*            Creates one grid per image.
 	*            Initializes the neighbor vectors for both grids.
@@ -73,7 +73,7 @@ public:
 	* @param	 vDMatches is the matches between the keypoints,
 	*            which is detected through brute force nearest neighbor matching.
 	*/
-	gms_matcher(const vector<KeyPoint>& vkp1, const Size size1, 
+	gms_matcher(const vector<KeyPoint>& vkp1, const Size size1,
 		const vector<KeyPoint>& vkp2, const Size size2, const vector<DMatch>& vDMatches)
 	{
 		// Input initialization (keypoints and matches)
@@ -85,9 +85,9 @@ public:
 		// Grid size initialization
 		// Note that mGridSizeLeft has a width and a height
 		mGridSizeLeft = Size(20, 20); // The default grid size for the first image is 20 by 20
-		
+
 		// Total number of cells in the grid (20 * 20)
-		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height; 
+		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height;
 
 		// The mGridNeighborLeft matrix is size 400 by 9 by default
 		// The zeros function takes in the number of rows, columns, and data type
@@ -158,12 +158,27 @@ private:
 
 public:
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
-	int GetInlierMask(vector<bool>& inliersToReturn, 
+	/** Get the inliers between two images
+	* @pre       The GetInlierMask public method is called.
+	*
+	* @post      This public method will run GMS.
+	*            Depending on the settings provided when the GetInlierMask is called,
+	*            this will either run without scale or rotation,
+	*            with scale OR with rotation, or with BOTH scale AND rotation,
+	*
+	*            Fill the inliersToReturn vector with true correspondences.
+	*            Return the count of inliers found.
+	*
+	* @param	 inliersToReturn is the true correspondences between the images
+	* @param     WithScale if true indicates the 2nd image is scaled
+	* @param     WithRotation if true indicates the 2nd image is rotated
+	* @return    return the max_inlier (count of inliers found)
+	*/
+	int GetInlierMask(vector<bool>& inliersToReturn,
 		bool WithScale = false, bool WithRotation = false);
 
 private:
-	
+
 	/** Normalize Key Points to Range (0 - 1)
 	* @pre       Matching was performed between two images.
 	*            This method will be called twice,
@@ -174,12 +189,12 @@ private:
 	* @param     size is the dimensions of one image.
 	* @param	 npts will be filled with normalized points from one image.
 	*/
-	void NormalizePoints(const vector<KeyPoint>& kp, 
+	void NormalizePoints(const vector<KeyPoint>& kp,
 		const Size& size, vector<Point2f>& npts) {
-		
+
 		const size_t numP = kp.size();  // How many keypoints were there?
 		npts.resize(numP);              // Resize the normalizedPoints vector to be the same
-		                                // size as the original keypoint vector
+		// size as the original keypoint vector
 		const int width = size.width;   // What was the width of the image?
 		const int height = size.height; // What was the height of the image?
 
@@ -200,7 +215,7 @@ private:
 	* @param     initialMatches is a vector to be filled with pairs of points
 	*/
 	void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& initialMatches) {
-		
+
 		initialMatches.resize(mNumberMatches);
 		for (size_t i = 0; i < mNumberMatches; i++)
 		{
@@ -279,10 +294,24 @@ private:
 		return x + y * mGridSizeRight.width;
 	}
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
+	/** Assign Match Pairs
+	* @pre       The public GetInlierMask function called the run function,
+	*            which called this function.
+	* @post      Get the grid indexes for the pairs of points in every match.
+	*            Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+	*            Fill in the mvMatchPairs[i].first and mvMatchPairs[i].second points.
+	* @param     GridType is determined by how the grid is shifted
+	*            to ensure that keypoints that fall on the grid border
+	*            of the original grid are not excluded.
+	*/
 	void AssignMatchPairs(int GridType);
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
+	/** Verify Cell Pairs
+	* @pre       AssignMatchPairs was called to fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+	* @post      Sets mCellPairs to -1 if no matches were found between a cell in the left and a cell in the right.
+	*            Sets mCellPairs[i] to j (the index of the cell in the right image) if there is a match.
+	* @param     RotationType is one of 8 rotation patterns.
+	*/
 	void VerifyCellPairs(int RotationType);
 
 	/** Get Neighbor 9
@@ -295,7 +324,7 @@ private:
 	vector<int> GetNB9(const int idx, const Size& GridSize) {
 
 		//A vector of 9 slots filled with -1's
-		vector<int> NB9(9, -1); 
+		vector<int> NB9(9, -1);
 
 		//Find out what cell to look at within the 20 by 20 grid
 		int idx_x = idx % GridSize.width; //What part of the grid - in the x dimension?
@@ -313,9 +342,9 @@ private:
 				int idx_yy = idx_y + yi; // -1 would be up; 0 is center; 1 is down
 
 				//Make sure you do not go out of bounds
-				if (idx_xx < 0 || 
-					idx_xx >= GridSize.width || 
-					idx_yy < 0 || 
+				if (idx_xx < 0 ||
+					idx_xx >= GridSize.width ||
+					idx_yy < 0 ||
 					idx_yy >= GridSize.height)
 					continue;
 
@@ -337,11 +366,11 @@ private:
 
 	/** Initialize the neighbor matrices.
 	* @pre       The GridSize is known.
-	*            This function will be called twice, 
+	*            This function will be called twice,
 	*			 once for the left image and once for the right image.
 	* @post      Fill the neighbors matrices with indexes to the neighbors for each cell.
 	* @param	 neighbor is the matrix of neighbors (400 by 9) for one grid / image
-	* @param     GridSize is the dimensions of one grid 
+	* @param     GridSize is the dimensions of one grid
 	*/
 	void InitializeNeighbors(Mat& neighbor, const Size& GridSize) {
 
@@ -361,7 +390,7 @@ private:
 	}
 
 	/** Set the scale for image 2 (the right image)
-	* @pre		 Image 1, the left image has a grid and 
+	* @pre		 Image 1, the left image has a grid and
 	*            This is called within the GetInlierMask function
 	*            to make sure that 5 different scales are tried.
 	* @post      Initialize the neighbor vector for the right image.
@@ -378,25 +407,35 @@ private:
 		// Initialize the neighbors of right grid 
 		mGridNeighborRight = Mat::zeros(totalNumberOfCellsRight, 9, CV_32SC1);
 		InitializeNeighbors(mGridNeighborRight, mGridSizeRight);
-	
+
 	}
 
-	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
+	/** RUN GMS
+	* @pre       run is called from the public GetInlierMask function.
+	* @post      All inliers in mvbInlierMask
+	*            will be initialized to false.
+	*            As the algorithm goes through each iteration,
+	*            more inliers are found and added.
+	*            This calls the AssignMatchPairs and VerifyCellPairs functions.
+	* @param     RotationType is one of 8 rotation patterns.
+	*            This is needed for the VerifyCellPairs method.
+	* @return    The number of inliers
+	*/
 	int run(int RotationType);
 
 };
 
 /** Get the inliers between two images
 * @pre       The GetInlierMask public method is called.
-* 
+*
 * @post      This public method will run GMS.
 *            Depending on the settings provided when the GetInlierMask is called,
-*            this will either run without scale or rotation, 
+*            this will either run without scale or rotation,
 *            with scale OR with rotation, or with BOTH scale AND rotation,
 *
 *            Fill the inliersToReturn vector with true correspondences.
 *            Return the count of inliers found.
-* 
+*
 * @param	 inliersToReturn is the true correspondences between the images
 * @param     WithScale if true indicates the 2nd image is scaled
 * @param     WithRotation if true indicates the 2nd image is rotated
@@ -517,10 +556,10 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 		}
 
 		//Ensure that neither index is out of bounds.
-		if (lgidx < 0 || rgidx < 0)	continue; 
+		if (lgidx < 0 || rgidx < 0)	continue;
 
 		// Increment the motion statistics vector for each match found inside those corresponding cells
-		mMotionStatistics.at<int>(lgidx, rgidx)++; 
+		mMotionStatistics.at<int>(lgidx, rgidx)++;
 
 		// Increment the number of matched points per cell for the left image
 		mNumberPointsInPerCellLeft[lgidx]++;
@@ -563,7 +602,7 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 			{
 				// For the grid pair i, j
 				// Set the value of mCellPairs[i] to equal the index j from the 2nd grid.
-				mCellPairs[i] = j;     
+				mCellPairs[i] = j;
 				max_number = value[j]; // Set the new maximum
 			}
 		}
@@ -663,7 +702,7 @@ int gms_matcher::run(int RotationType) {
 					// By setting the inlier mask to false initially,
 					// only true matches will be found.
 					// Fill mvbInlierMask with true if the match was true
-					mvbInlierMask[i] = true; 
+					mvbInlierMask[i] = true;
 				}
 			}
 		}
