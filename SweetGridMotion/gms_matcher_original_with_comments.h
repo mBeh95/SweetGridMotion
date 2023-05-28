@@ -177,8 +177,6 @@ private:
 	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
 
-
-
 public:
 
 	// TODO: ADD THE COMMENTS ABOVE ALL DECLARATIONS
