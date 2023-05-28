@@ -75,8 +75,6 @@ const int mRotationPatterns[8][9] = {
 const double mScaleRatios[5] = { 1.0, 1.0 / 2, 1.0 / sqrt(2.0), sqrt(2.0), 2.0 };
 
 
-
-
 // ++++++++++++++++++++++++++++ GMS MATCHER ++++++++++++++++++++++++++++++  //
 class gms_matcher
 {
@@ -152,16 +150,23 @@ private:
 	// 
 	vector<int> mNumberPointsInPerCellLeft;
 
-	// Index  : grid_idx_left
-	// Value   : grid_idx_right
+	// mCellPairs - a one-dimensional vector that holds an index to the RIGHT image if there is a match.
+	// If the value is -1 there were NO MATCHES between the left and the right grids for this cell.
+	// If the value is NOT -1, there was a match between the left and the right grids for this cell.
+	// Index  : grid_idx_left - mCellPairs[i] is the grid index from the LEFT image
+	// Value  : grid_idx_right - mCellPairs[i] = j is the grid index from the RIGHT image (or -1 if no matches)
+	// Size   : the total number of cells in the grid
 	vector<int> mCellPairs;
 
-	// Every Match has a cell-pair 
-	// first  : grid_idx_left
-	// second : grid_idx_right
+	// Every match between two points has a corresponding cell-pair too
+	// This is initialized in the AssignMatchPairs function
+	// first  : grid_idx_left - mvMatchPairs[i].first = LEFT
+	// second : grid_idx_right - mvMatchPairs[i].second = RIGHT
+	// Size   : the total number of matches found initially
 	vector<pair<int, int> > mvMatchPairs;
 
 	// Inlier Mask for output
+	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
 
 	// All possible neighbors for all possible cells in each grid (left and right grid / image)
@@ -494,6 +499,7 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 *            which called this function.
 * @post      Get the grid indexes for the pairs of points in every match.
 *            Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+*            Fill in the mvMatchPairs[i].first and mvMatchPairs[i].second points.
 * @param     GridType is determined by how the grid is shifted
 *            to ensure that keypoints that fall on the grid border
 *            of the original grid are not excluded.
@@ -510,6 +516,7 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 		// Get the grid index for that pair of points.
 		// Index locations depend on the GridType.
 		// Get the grid index for the left point (.first indicates LEFT)
+		// Simultaneously, set mvMatchPairs[i].first
 		int lgidx = mvMatchPairs[i].first = GetGridIndexLeft(lp, GridType);
 		int rgidx = -1;
 
@@ -517,6 +524,7 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 		if (GridType == 1)
 		{
 			//Get the grid index for the right point (.second indicates RIGHT)
+			// Simultaneously, set mvMatchPairs[i].second
 			rgidx = mvMatchPairs[i].second = GetGridIndexRight(rp);
 		}
 		else
@@ -528,68 +536,93 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 		//Ensure that neither index is out of bounds.
 		if (lgidx < 0 || rgidx < 0)	continue; 
 
-		// Fill in the motion statistics vector for each match
+		// Increment the motion statistics vector for each match found inside those corresponding cells
 		mMotionStatistics.at<int>(lgidx, rgidx)++; 
 
-		// Fill in the number of points per cell for the left image
+		// Increment the number of matched points per cell for the left image
 		mNumberPointsInPerCellLeft[lgidx]++;
 	}
 
 }
 
-/**
-* @pre
-* @post
+/** Verify Cell Pairs
+* @pre       AssignMatchPairs was called to fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+* @post      Sets mCellPairs to -1 if no matches were found between a cell in the left and a cell in the right.
+*            Sets mCellPairs[i] to j (the index of the cell in the right image) if there is a match.
 * @param     RotationType is one of 8 rotation patterns.
 */
 void gms_matcher::VerifyCellPairs(int RotationType) {
 
-	//Set the rotation pattern
+	// Set the rotation pattern
 	const int* CurrentRP = mRotationPatterns[RotationType - 1];
 
+	// For all the cells in the left grid
 	for (int i = 0; i < totalNumberOfCellsLeft; i++)
 	{
+		// If there were NO MATCHES here, set mCellPairs to -1 and try the next cell.
+		// (Note: row is looking at one match between the left and right image)
 		if (sum(mMotionStatistics.row(i))[0] == 0)
 		{
-			mCellPairs[i] = -1;
+			mCellPairs[i] = -1; // Set the index to 0; no matches were found
 			continue;
 		}
 
 		int max_number = 0;
+
+		// For all cells in the right grid
 		for (int j = 0; j < totalNumberOfCellsRight; j++)
 		{
+			// Look at the mMotionStatistics vector for this cell
 			int* value = mMotionStatistics.ptr<int>(i);
+
+			// If there is a match between the left and right grids ...
 			if (value[j] > max_number)
 			{
-				//Set the maximum
-				mCellPairs[i] = j;
-				max_number = value[j];
+				// For the grid pair i, j
+				// Set the value of mCellPairs[i] to equal the index j from the 2nd grid.
+				mCellPairs[i] = j;     
+				max_number = value[j]; // Set the new maximum
 			}
 		}
 
+		// Get the index within the right grid
 		int idx_grid_rt = mCellPairs[i];
 
+		// Get the indexes of the neighbor cells surrounding that cell
 		const int* NB9_lt = mGridNeighborLeft.ptr<int>(i);
 		const int* NB9_rt = mGridNeighborRight.ptr<int>(idx_grid_rt);
 
-		int score = 0;
-		double thresh = 0;
-		int numpair = 0;
+		int score = 0;		// Motion statistics score (from LEFT and RIGHT images)
+		double thresh = 0;	// Threshold (just in the LEFT image)
+		int numpair = 0;	// How many cells were there that contained matches?
 
+		// For each of the 9 neighbors
 		for (size_t j = 0; j < 9; j++)
 		{
-			//Use the motion kernel (2020 paper, page 1584)
+			// Get the index for the left image
 			int ll = NB9_lt[j];
+
+			// For the right image, grab the neighbor indexes (in case of rotation changes)
 			int rr = NB9_rt[CurrentRP[j] - 1];
+
+			// Check to make sure the indexes are not out of bounds
 			if (ll == -1 || rr == -1)	continue;
 
+			// Increment the score, using the number of matches found within that cell (from mMotionStatistics)
+			// and all the neighboring cells around it within both the LEFT and the RIGHT images.
 			score += mMotionStatistics.at<int>(ll, rr);
+
+			// The threshold is a function of how many matches were found within that cell
+			// and all the neighboring cells around it within the LEFT image alone.
 			thresh += mNumberPointsInPerCellLeft[ll];
-			numpair++;
+
+			numpair++; // Counts the number of cells that did contain matches
 		}
 
+		// Evaluate the threshold
 		thresh = THRESH_FACTOR * sqrt(thresh / numpair);
 
+		// Bad match
 		if (score < thresh)
 			mCellPairs[i] = -2;
 	}
@@ -611,8 +644,10 @@ int gms_matcher::run(int RotationType) {
 	// Initialize all matches to false at first
 	mvbInlierMask.assign(mNumberMatches, false);
 
-	// Initialize Motion Statisctics
+	// Initialize mMotionStatistics to 0s for 400 by 400 cells
 	mMotionStatistics = Mat::zeros(totalNumberOfCellsLeft, totalNumberOfCellsRight, CV_32SC1);
+
+	// Initialize mvMatchPairs to 0s for each set of matches
 	mvMatchPairs.assign(mNumberMatches, pair<int, int>(0, 0));
 
 	// Repeat for each of the 4 grid types -- original, shifted x, shifted y, shifted xy
@@ -630,22 +665,28 @@ int gms_matcher::run(int RotationType) {
 		// Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors
 		AssignMatchPairs(GridType);
 
-		// 
+		// Fill in the mCellPairs vector
 		VerifyCellPairs(RotationType);
 
 		// Mark inliers
 		for (size_t i = 0; i < mNumberMatches; i++)
 		{
+			// If there was a match between the cells
 			if (mvMatchPairs[i].first >= 0) {
+
+				// There should be an equal number of matches per cell pair (if the cells match)
 				if (mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
 				{
 					// By setting the inlier mask to false initially,
 					// only true matches will be found.
-					mvbInlierMask[i] = true;
+					// Fill mvbInlierMask with true if the match was true
+					mvbInlierMask[i] = true; 
 				}
 			}
 		}
 	}
+
+	// Return the total number of inliers found
 	int num_inlier = sum(mvbInlierMask)[0];
 	return num_inlier;
 }
