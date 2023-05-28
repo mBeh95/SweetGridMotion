@@ -24,9 +24,12 @@ There were also a few typos that we caught from the original code, including "in
 3) We set up main.cpp and attempted to replicate the results from the 2017 GMS paper.
 
 4) Finally, we made our own implementations.
+
 gms_matcher_mb.h – Melody (Prarin) Behdarvandian
+
 gms_matcher_bp.h – Breanna Powell
 
 ## Setup
 You will need CMake
+
 You will need OpenCV
