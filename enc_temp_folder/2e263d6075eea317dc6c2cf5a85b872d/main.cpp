@@ -30,7 +30,7 @@ Mat DrawInlier(Mat& src1, Mat& src2, vector<KeyPoint>& kpt1, vector<KeyPoint>& k
 
 void runImagePair() {
 	Mat img1 = imread("01.jpg");
-	Mat img2 = imread("02.jpg");
+	Mat img2 = imread("02vert.png");
 
 	GmsMatch(img1, img2);
 }
@@ -63,7 +63,7 @@ void GmsMatch(Mat& img1, Mat& img2) {
 	// GMS filter
 	std::vector<bool> vbInliers;
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
-	int num_inliers = gms.GetInlierMask(vbInliers, false, false);
+	int num_inliers = gms.GetInlierMask(vbInliers, true, true);
 	cout << "Get total " << num_inliers << " matches." << endl;
 
 	// collect matches

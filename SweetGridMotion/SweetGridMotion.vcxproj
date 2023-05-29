@@ -114,11 +114,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Users\vanco\OneDrive\Desktop\opencv\opencv\install\x64\vc16\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_highgui470d.lib
-;opencv_imgcodecs470d.lib
-;opencv_core470d.lib;
-opencv_xfeatures2d470d.lib;
-opencv_features2d470d.lib;opencv_imgproc470d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_highgui470d.lib;opencv_imgcodecs470d.lib;opencv_core470d.lib;opencv_xfeatures2d470d.lib;opencv_features2d470d.lib;opencv_imgproc470d.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
