@@ -156,6 +156,13 @@ private:
 	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
 
+	// Breanna's addition
+	// True if an edge
+	// Index  : grid_idx_left
+	// Value  : grid_idx_right
+	// Size   : the total number of cells in the grid
+	vector<bool> borderCellsLeft, borderCellsRight;
+
 public:
 
 	/** Get the inliers between two images
@@ -214,85 +221,112 @@ private:
 	*            It contains query and train indexes.
 	* @param     initialMatches is a vector to be filled with pairs of points
 	*/
-	void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& initialMatches) {
+void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& initialMatches) {
 
-		initialMatches.resize(mNumberMatches);
-		for (size_t i = 0; i < mNumberMatches; i++)
-		{
-			//Fill initialMatches with pairs of points from vDMatches
-			initialMatches[i] = pair<int, int>(vDMatches[i].queryIdx, vDMatches[i].trainIdx);
+	initialMatches.resize(mNumberMatches);
+	for (size_t i = 0; i < mNumberMatches; i++)
+	{
+		//Fill initialMatches with pairs of points from vDMatches
+		initialMatches[i] = pair<int, int>(vDMatches[i].queryIdx, vDMatches[i].trainIdx);
+	}
+}
+
+/** Return the starting index for the left grid / image
+* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
+*			 A valid point is passed to the function.
+* @post      Shift the left image's grid a half cell width in the x, y, and xy directions,
+*            depending on the GridType
+*		     Return the starting index of the left image's grid.
+* @param	 pt is the left point (x, y) coordinates.
+* @param     GridType is the direction (x, y, or xy) to shift the grid over
+* @return    x + y * mGridSizeLeft.width
+*/
+int GetGridIndexLeft(const Point2f& pt, int GridType) {
+	int x = 0, y = 0;
+
+	//NO SHIFTING
+	if (GridType == 1) {
+		x = floor(pt.x * mGridSizeLeft.width);
+		y = floor(pt.y * mGridSizeLeft.height);
+
+		if (y >= mGridSizeLeft.height || x >= mGridSizeLeft.width) {
+			return -1;
 		}
 	}
 
-	/** Return the starting index for the left grid / image
-	* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
-	*			 A valid point is passed to the function.
-	* @post      Shift the left image's grid a half cell width in the x, y, and xy directions,
-	*            depending on the GridType
-	*		     Return the starting index of the left image's grid.
-	* @param	 pt is the left point (x, y) coordinates.
-	* @param     GridType is the direction (x, y, or xy) to shift the grid over
-	* @return    x + y * mGridSizeLeft.width
-	*/
-	int GetGridIndexLeft(const Point2f& pt, int GridType) {
-		int x = 0, y = 0;
+	//SHIFT IN X DIRECTION
+	if (GridType == 2) {
+		x = floor(pt.x * mGridSizeLeft.width + 0.5);
+		y = floor(pt.y * mGridSizeLeft.height);
 
-		//NO SHIFTING
-		if (GridType == 1) {
-			x = floor(pt.x * mGridSizeLeft.width);
-			y = floor(pt.y * mGridSizeLeft.height);
-
-			if (y >= mGridSizeLeft.height || x >= mGridSizeLeft.width) {
-				return -1;
-			}
+		if (x >= mGridSizeLeft.width || x < 1) {
+			return -1;
 		}
-
-		//SHIFT IN X DIRECTION
-		if (GridType == 2) {
-			x = floor(pt.x * mGridSizeLeft.width + 0.5);
-			y = floor(pt.y * mGridSizeLeft.height);
-
-			if (x >= mGridSizeLeft.width || x < 1) {
-				return -1;
-			}
-		}
-
-		//SHIFT IN THE Y DIRECTION
-		if (GridType == 3) {
-			x = floor(pt.x * mGridSizeLeft.width);
-			y = floor(pt.y * mGridSizeLeft.height + 0.5);
-
-			if (y >= mGridSizeLeft.height || y < 1) {
-				return -1;
-			}
-		}
-
-		//SHIFT IN THE X AND Y DIRECTION
-		if (GridType == 4) {
-			x = floor(pt.x * mGridSizeLeft.width + 0.5);
-			y = floor(pt.y * mGridSizeLeft.height + 0.5);
-
-			if (y >= mGridSizeLeft.height || y < 1 || x >= mGridSizeLeft.width || x < 1) {
-				return -1;
-			}
-		}
-
-		//Return the index of the leftmost point of the grid
-		return x + y * mGridSizeLeft.width;
 	}
 
-	/** Return the starting index for the right grid / image
-	* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
-	*			 A valid point is passed to the function.
-	* @post      Return the starting index of the right image's grid.
-	* @param	 pt is the right point (x, y) coordinates.
-	*/
-	int GetGridIndexRight(const Point2f& pt) {
-		int x = floor(pt.x * mGridSizeRight.width);
-		int y = floor(pt.y * mGridSizeRight.height);
+	//SHIFT IN THE Y DIRECTION
+	if (GridType == 3) {
+		x = floor(pt.x * mGridSizeLeft.width);
+		y = floor(pt.y * mGridSizeLeft.height + 0.5);
 
-		return x + y * mGridSizeRight.width;
+		if (y >= mGridSizeLeft.height || y < 1) {
+			return -1;
+		}
 	}
+
+	//SHIFT IN THE X AND Y DIRECTION
+	if (GridType == 4) {
+		x = floor(pt.x * mGridSizeLeft.width + 0.5);
+		y = floor(pt.y * mGridSizeLeft.height + 0.5);
+
+		if (y >= mGridSizeLeft.height || y < 1 || x >= mGridSizeLeft.width || x < 1) {
+			return -1;
+		}
+	}
+
+	//Return the index of the leftmost point of the grid
+	return x + y * mGridSizeLeft.width;
+}
+
+/** Return the starting index for the right grid / image
+* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
+*			 A valid point is passed to the function.
+* @post      Return the starting index of the right image's grid.
+* @param	 pt is the right point (x, y) coordinates.
+*/
+int GetGridIndexRight(const Point2f& pt) {
+	int x = floor(pt.x * mGridSizeRight.width);
+	int y = floor(pt.y * mGridSizeRight.height);
+
+	return x + y * mGridSizeRight.width;
+}
+
+
+/** Initialize Border Cells
+* @pre       A GMS matcher object was constructed.
+* @post      Fill the borderCells vector with true for any cell that is a border.
+*            This needs to be run once for the left and once for the right grid
+*            if there are changes to the right grid dimensions 
+*            (i.e. we do 20 by 20 for left an 40 by 40 for the right)
+* @param     totalSize is the total number of cells in the grid 
+*			 (totalNumberOfCellsLeft or totalNumberOfCellsRight).
+* @param     width is the width of the grid (20 if 20 by 20).
+*            height is the height of the grid (20 if 20 by 20).
+*/
+void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, int height) {
+
+	// Mark as true for the for the side edges
+	for (int i = 1; i < height - 2; i++){
+		borderCells[height * i] = true;				 // Left edge of grid
+		borderCells[height * i + width - 1] = true;	 // Right edge of grid
+	}
+	
+	// Mark as true for the first row and the last row
+	for (int i = 0; i < width; i++) {
+		borderCells[i] = true;				       // First row
+		borderCells[totalSize - width + i] = true; // Last row
+	}
+}
 
 	/** Assign Match Pairs
 	* @pre       The public GetInlierMask function called the run function,
@@ -319,16 +353,16 @@ private:
 	*            InitializeNeighbors calls this function.
 	* @post      Fill in NB9 with indexes for the neighbors for one cell.
 	* @param	 idx is the index of ONE CELL in the grid.
-	* @param     GridSize is the dimensions of the grid (20 by 20)
+	* @param     gridSize is the dimensions of the grid (20 by 20)
 	*/
-	vector<int> GetNB9(const int idx, const Size& GridSize) {
+	vector<int> GetNB9(const int idx, const Size& gridSize) {
 
 		//A vector of 9 slots filled with -1's
 		vector<int> NB9(9, -1);
 
 		//Find out what cell to look at within the 20 by 20 grid
-		int idx_x = idx % GridSize.width; //What part of the grid - in the x dimension?
-		int idx_y = idx / GridSize.width; //What part of the grid - in the y dimension?
+		int idx_x = idx % gridSize.width; //What part of the grid - in the x dimension?
+		int idx_y = idx / gridSize.width; //What part of the grid - in the y dimension?
 
 		//Repeat for yi equals -1, 0, and 1
 		for (int yi = -1; yi <= 1; yi++)
@@ -343,9 +377,9 @@ private:
 
 				//Make sure you do not go out of bounds
 				if (idx_xx < 0 ||
-					idx_xx >= GridSize.width ||
+					idx_xx >= gridSize.width ||
 					idx_yy < 0 ||
-					idx_yy >= GridSize.height)
+					idx_yy >= gridSize.height)
 					continue;
 
 				// Fill in the NB9 vector
@@ -358,27 +392,27 @@ private:
 				// When xi is -1 and yi is  1, this indexes to NB9[6]
 				// When xi is  0 and yi is  1, this indexes to NB9[7]
 				// When xi is  1 and yi is  1, this indexes to NB9[8]
-				NB9[xi + 4 + yi * 3] = idx_xx + idx_yy * GridSize.width;
+				NB9[xi + 4 + yi * 3] = idx_xx + idx_yy * gridSize.width;
 			}
 		}
 		return NB9;
 	}
 
 	/** Initialize the neighbor matrices.
-	* @pre       The GridSize is known.
+	* @pre       The gridSize is known.
 	*            This function will be called twice,
 	*			 once for the left image and once for the right image.
 	* @post      Fill the neighbors matrices with indexes to the neighbors for each cell.
 	* @param	 neighbor is the matrix of neighbors (400 by 9) for one grid / image
-	* @param     GridSize is the dimensions of one grid
+	* @param     gridSize is the dimensions of one grid
 	*/
-	void InitializeNeighbors(Mat& neighbor, const Size& GridSize) {
+	void InitializeNeighbors(Mat& neighbor, const Size& gridSize) {
 
 		//Repeat for ALL CELLS in the grid (400 cells if 20 by 20)
 		for (int i = 0; i < neighbor.rows; i++)
 		{
 			// Grab the neighbor indexes for the cell
-			vector<int> NB9 = GetNB9(i, GridSize);
+			vector<int> NB9 = GetNB9(i, gridSize);
 
 			// The data pointer points to the neighbor for 
 			int* data = neighbor.ptr<int>(i);
