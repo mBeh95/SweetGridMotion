@@ -16,7 +16,8 @@
 #include <iostream>
 
 #include "gms_matcher.h"
-
+//#include "gms_matcher_mb.h"
+//#include "gms_matcher_bp.h"
 using namespace cv;
 using namespace xfeatures2d;
 using namespace cuda;
