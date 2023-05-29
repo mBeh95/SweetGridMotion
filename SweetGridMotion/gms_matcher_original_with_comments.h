@@ -340,16 +340,16 @@ private:
 	*            InitializeNeighbors calls this function.
 	* @post      Fill in NB9 with indexes for the neighbors for one cell.
 	* @param	 idx is the index of ONE CELL in the grid.
-	* @param     GridSize is the dimensions of the grid (20 by 20)
+	* @param     gridSize is the dimensions of the grid (20 by 20)
 	*/
-	vector<int> GetNB9(const int idx, const Size& GridSize) {
+	vector<int> GetNB9(const int idx, const Size& gridSize) {
 
 		//A vector of 9 slots filled with -1's
 		vector<int> NB9(9, -1); 
 
 		//Find out what cell to look at within the 20 by 20 grid
-		int idx_x = idx % GridSize.width; //What part of the grid - in the x dimension?
-		int idx_y = idx / GridSize.width; //What part of the grid - in the y dimension?
+		int idx_x = idx % gridSize.width; //What part of the grid - in the x dimension?
+		int idx_y = idx / gridSize.width; //What part of the grid - in the y dimension?
 
 		//Repeat for yi equals -1, 0, and 1
 		for (int yi = -1; yi <= 1; yi++)
@@ -364,9 +364,9 @@ private:
 
 				//Make sure you do not go out of bounds
 				if (idx_xx < 0 || 
-					idx_xx >= GridSize.width || 
+					idx_xx >= gridSize.width || 
 					idx_yy < 0 || 
-					idx_yy >= GridSize.height)
+					idx_yy >= gridSize.height)
 					continue;
 
 				// Fill in the NB9 vector
@@ -379,27 +379,27 @@ private:
 				// When xi is -1 and yi is  1, this indexes to NB9[6]
 				// When xi is  0 and yi is  1, this indexes to NB9[7]
 				// When xi is  1 and yi is  1, this indexes to NB9[8]
-				NB9[xi + 4 + yi * 3] = idx_xx + idx_yy * GridSize.width;
+				NB9[xi + 4 + yi * 3] = idx_xx + idx_yy * gridSize.width;
 			}
 		}
 		return NB9;
 	}
 
 	/** Initialize the neighbor matrices.
-	* @pre       The GridSize is known.
+	* @pre       The gridSize is known.
 	*            This function will be called twice, 
 	*			 once for the left image and once for the right image.
 	* @post      Fill the neighbors matrices with indexes to the neighbors for each cell.
 	* @param	 neighbor is the matrix of neighbors (400 by 9) for one grid / image
-	* @param     GridSize is the dimensions of one grid 
+	* @param     gridSize is the dimensions of one grid 
 	*/
-	void InitializeNeighbors(Mat& neighbor, const Size& GridSize) {
+	void InitializeNeighbors(Mat& neighbor, const Size& gridSize) {
 
 		//Repeat for ALL CELLS in the grid (400 cells if 20 by 20)
 		for (int i = 0; i < neighbor.rows; i++)
 		{
 			// Grab the neighbor indexes for the cell
-			vector<int> NB9 = GetNB9(i, GridSize);
+			vector<int> NB9 = GetNB9(i, gridSize);
 
 			// The data pointer points to the neighbor for 
 			int* data = neighbor.ptr<int>(i);
