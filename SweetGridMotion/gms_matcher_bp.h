@@ -309,7 +309,7 @@ int GetGridIndexRight(const Point2f& pt) {
 *            This needs to be run once for the left and once for the right grid
 *            if there are changes to the right grid dimensions 
 *            (i.e. we do 20 by 20 for left an 40 by 40 for the right)
-* @param     totalSize is the total number of cells in the grid 
+* @param     totalSize is the total number of cells in the grid (ex. 400 if 20 by 20).
 *			 (totalNumberOfCellsLeft or totalNumberOfCellsRight).
 * @param     width is the width of the grid (20 if 20 by 20).
 *            height is the height of the grid (20 if 20 by 20).
@@ -328,6 +328,7 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 		borderCells[totalSize - width + i] = true; // Last row
 	}
 }
+
 
 	/** Assign Match Pairs
 	* @pre       The public GetInlierMask function called the run function,
@@ -668,6 +669,10 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 			// Increment the score, using the number of matches found within that cell (from mMotionStatistics)
 			// and all the neighboring cells around it within both the LEFT and the RIGHT images.
 			score += mMotionStatistics.at<int>(ll, rr);
+
+			// TODO --- add a conditional here that will increase the score for a border cell
+
+
 
 			// The threshold is a function of how many matches were found within that cell
 			// and all the neighboring cells around it within the LEFT image alone.
