@@ -142,6 +142,7 @@ opencv_features2d470d.lib;opencv_imgproc470d.lib;%(AdditionalDependencies)</Addi
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="gms_matcher.h" />
+    <ClInclude Include="gms_matcher_mb.h" />
     <ClInclude Include="gms_matcher_original_with_comments.h" />
   </ItemGroup>
   <ItemGroup>
