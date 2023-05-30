@@ -136,7 +136,7 @@ private:
 	// Grid Size - 20 by 20
 	// Note: left is the first image; right is the second image
 	// mGridSizeLeft has a width and a height -- 20 by 20 by default
-	// mGridSizeRight has a width and a height too -- 20 by 20
+	// mGridSizeRight is set during the setScale function - varies by scale
 	Size mGridSizeLeft, mGridSizeRight;
 
 	// How many cells total are in the left image's grid?
@@ -268,7 +268,7 @@ private:
 			}
 		}
 
-		//SHIFT IN X DIRECTION
+		//SHIFT IN X DIRECTION (moves the grid to the right)
 		if (GridType == 2) {
 			x = floor(pt.x * mGridSizeLeft.width + 0.5);
 			y = floor(pt.y * mGridSizeLeft.height);
@@ -278,7 +278,7 @@ private:
 			}
 		}
 
-		//SHIFT IN THE Y DIRECTION
+		//SHIFT IN THE Y DIRECTION (moves the grid down)
 		if (GridType == 3) {
 			x = floor(pt.x * mGridSizeLeft.width);
 			y = floor(pt.y * mGridSizeLeft.height + 0.5);
@@ -288,7 +288,7 @@ private:
 			}
 		}
 
-		//SHIFT IN THE X AND Y DIRECTION
+		//SHIFT IN THE X AND Y DIRECTION (moves right and down)
 		if (GridType == 4) {
 			x = floor(pt.x * mGridSizeLeft.width + 0.5);
 			y = floor(pt.y * mGridSizeLeft.height + 0.5);
@@ -411,7 +411,7 @@ private:
 	}
 
 	/** Set the scale for image 2 (the right image)
-	* @pre		 Image 1, the left image has a grid and 
+	* @pre		 Image 1, the left image, has a grid, and 
 	*            This is called within the GetInlierMask function
 	*            to make sure that 5 different scales are tried.
 	* @post      Initialize the neighbor vector for the right image.

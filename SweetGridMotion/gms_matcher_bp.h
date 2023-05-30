@@ -91,9 +91,8 @@ public:
 		// Grid size initialization
 		// Note that mGridSizeLeft has a width and a height
 
-		// ++++++++++++++++++++++++++++++++++++ GRID SIZING +++++++++++++++++++++++++++++++++//
-		// TODO: TRY ADDING A DYNAMIC GRID SIZER HERE:
-		mGridSizeLeft = Size(20, 20); // The default grid size for the first image is 20 by 20
+		// +++++++++++++++++++++++++++++++++ DYNAMIC GRID SIZING +++++++++++++++++++++++++++++++++//
+		mGridSizeLeft = setGridSize(size1);
 
 		// Total number of cells in the grid (20 * 20)
 		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height;
@@ -124,7 +123,7 @@ private:
 	// Grid Size - 20 by 20
 	// Note: left is the first image; right is the second image
 	// mGridSizeLeft has a width and a height -- 20 by 20 by default
-	// mGridSizeRight has a width and a height too -- 20 by 20
+	// mGridSizeRight is set during the setScale function - varies by scale
 	Size mGridSizeLeft, mGridSizeRight;
 
 	// How many cells total are in the left image's grid?
@@ -211,6 +210,7 @@ private:
 		const size_t numP = kp.size();  // How many keypoints were there?
 		npts.resize(numP);              // Resize the normalizedPoints vector to be the same
 		// size as the original keypoint vector
+
 		const int width = size.width;   // What was the width of the image?
 		const int height = size.height; // What was the height of the image?
 
@@ -240,16 +240,27 @@ void convertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& in
 	}
 }
 
-/** Resize 
-* @pre       
-* @post      
-* @param	 
-* @param     
+/** Set the grid size
+* @pre       A valid image has been passed to the GMS constructor
+* @post      Set the dimensions for the grid and return the dimensions
+* @param	 size is the image size (has a width and a height in pixels)
+* @return    gridDim is the grid dimensions appropriate for that grid size
 */
-Size resizeGrid(const int size1) {
+Size setGridSize(const Size size) {
+
 	Size gridDim;
 
+	// Small images - 640 X 480 or 640 X 480 images or smaller - 20 by 20 grid
+	if (size.width <= 640 && size.height <= 480 || size.width <= 480 && size.height <= 640)
+		gridDim = Size(20, 20);
 
+	// Mid images - 1280 X 960 or 960 X 1280 images or smaller - 40 by 40 grid
+	else if (size.width <= 1280 && size.height <= 960 || size.width <= 960 && size.height <= 1280)
+		gridDim = Size(40, 40);
+
+	// Large images - bigger than 1280 X 960 or 960 X 1280 - 60 by 60 grid
+	else
+		gridDim = Size(60, 60);
 
 	return gridDim;
 }
@@ -297,7 +308,7 @@ int getGridIndexLeft(const Point2f& pt, int GridType) {
 		}
 	}
 
-	//SHIFT IN THE X AND Y DIRECTION (moves right and down again)
+	//SHIFT IN THE X AND Y DIRECTION (moves right and down)
 	if (GridType == 4) {
 		x = floor(pt.x * mGridSizeLeft.width + 0.5);
 		y = floor(pt.y * mGridSizeLeft.height + 0.5);
@@ -317,7 +328,7 @@ int getGridIndexLeft(const Point2f& pt, int GridType) {
 * @post      Return the starting index of the right image's grid.
 * @param	 pt is the right point (x, y) coordinates.
 */
-int GetGridIndexRight(const Point2f& pt) {
+int getGridIndexRight(const Point2f& pt) {
 	int x = floor(pt.x * mGridSizeRight.width);
 	int y = floor(pt.y * mGridSizeRight.height);
 
@@ -448,8 +459,8 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 	}
 
 	/** Set the scale for image 2 (the right image)
-	* @pre		 Image 1, the left image has a grid and
-	*            This is called within the GetInlierMask function
+	* @pre		 Image 1, the left image, has a grid, and
+	*            this is called within the GetInlierMask function
 	*            to make sure that 5 different scales are tried.
 	* @post      Initialize the neighbor vector for the right image.
 	*            In other words, fill the mGridNeighborRight vector.
@@ -605,7 +616,7 @@ void gms_matcher::assignMatchPairs(int GridType) {
 		{
 			//Get the grid index for the right point (.second indicates RIGHT)
 			// Simultaneously, set mvMatchPairs[i].second
-			rgidx = mvMatchPairs[i].second = GetGridIndexRight(rp);
+			rgidx = mvMatchPairs[i].second = getGridIndexRight(rp);
 		}
 		else
 		{
