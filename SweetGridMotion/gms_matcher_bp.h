@@ -83,13 +83,16 @@ public:
 		const vector<KeyPoint>& vkp2, const Size size2, const vector<DMatch>& vDMatches)
 	{
 		// Input initialization (keypoints and matches)
-		NormalizePoints(vkp1, size1, normalizedPoints1);	//Fills normalizedPoints1
-		NormalizePoints(vkp2, size2, normalizedPoints2);	//Fills normalizedPoints2
+		normalizePoints(vkp1, size1, normalizedPoints1);	//Fills normalizedPoints1
+		normalizePoints(vkp2, size2, normalizedPoints2);	//Fills normalizedPoints2
 		mNumberMatches = vDMatches.size();					//How many matches were found?
-		ConvertMatches(vDMatches, initialMatches);			//Fill initialMatches with pairs of points
+		convertMatches(vDMatches, initialMatches);			//Fill initialMatches with pairs of points
 
 		// Grid size initialization
 		// Note that mGridSizeLeft has a width and a height
+
+		// ++++++++++++++++++++++++++++++++++++ GRID SIZING +++++++++++++++++++++++++++++++++//
+		// TODO: TRY ADDING A DYNAMIC GRID SIZER HERE:
 		mGridSizeLeft = Size(20, 20); // The default grid size for the first image is 20 by 20
 
 		// Total number of cells in the grid (20 * 20)
@@ -101,7 +104,7 @@ public:
 		mGridNeighborLeft = Mat::zeros(totalNumberOfCellsLeft, 9, CV_32SC1);
 
 		// Fill in the matrixes of the 400 by 9 cells with indexes to the neighbors per cell
-		InitializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
+		initializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 	};
 
 	//Destructor
@@ -109,10 +112,10 @@ public:
 
 private:
 
-	// Normalized Points - filled during the NormalizePoints function
+	// Normalized Points - filled during the normalizePoints function
 	vector<Point2f> normalizedPoints1, normalizedPoints2;
 
-	// Matches - filled with pairs of points during the ConvertMatches function
+	// Matches - filled with pairs of points during the convertMatches function
 	vector<pair<int, int> > initialMatches;
 
 	// The original number of matches found between two images - initialized from the size of vDMatches 
@@ -132,15 +135,15 @@ private:
 
 	// All possible neighbors for all possible cells in each grid (left and right grid / image)
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
-	Mat mGridNeighborRight; //Initialized in the SetScale function from GetInlierMask - depends on scale
+	Mat mGridNeighborRight; //Initialized in the setScale function from GetInlierMask - depends on scale
 
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
-	// Note   : incremented in the AssignMatchPairs function
+	// Note   : incremented in the assignMatchPairs function
 	Mat mMotionStatistics;
 
-	// incremented in the AssignMatchPairs function
+	// incremented in the assignMatchPairs function
 	vector<int> mNumberPointsInPerCellLeft;
 
 	// mCellPairs - a one-dimensional vector that holds an index to the RIGHT image if there is a match.
@@ -152,7 +155,7 @@ private:
 	vector<int> mCellPairs;
 
 	// Every match between two points has a corresponding cell-pair too
-	// This is initialized in the AssignMatchPairs function
+	// This is initialized in the assignMatchPairs function
 	// first  : grid_idx_left - mvMatchPairs[i].first = LEFT
 	// second : grid_idx_right - mvMatchPairs[i].second = RIGHT
 	// Size   : the total number of matches found initially
@@ -202,7 +205,7 @@ private:
 	* @param     size is the dimensions of one image.
 	* @param	 npts will be filled with normalized points from one image.
 	*/
-	void NormalizePoints(const vector<KeyPoint>& kp,
+	void normalizePoints(const vector<KeyPoint>& kp,
 		const Size& size, vector<Point2f>& npts) {
 
 		const size_t numP = kp.size();  // How many keypoints were there?
@@ -227,7 +230,7 @@ private:
 	*            It contains query and train indexes.
 	* @param     initialMatches is a vector to be filled with pairs of points
 	*/
-void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& initialMatches) {
+void convertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& initialMatches) {
 
 	initialMatches.resize(mNumberMatches);
 	for (size_t i = 0; i < mNumberMatches; i++)
@@ -235,6 +238,20 @@ void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& in
 		//Fill initialMatches with pairs of points from vDMatches
 		initialMatches[i] = pair<int, int>(vDMatches[i].queryIdx, vDMatches[i].trainIdx);
 	}
+}
+
+/** Resize 
+* @pre       
+* @post      
+* @param	 
+* @param     
+*/
+Size resizeGrid(const int size1) {
+	Size gridDim;
+
+
+
+	return gridDim;
 }
 
 /** Return the starting index for the left grid / image
@@ -247,7 +264,7 @@ void ConvertMatches(const vector<DMatch>& vDMatches, vector<pair<int, int> >& in
 * @param     GridType is the direction (x, y, or xy) to shift the grid over
 * @return    x + y * mGridSizeLeft.width
 */
-int GetGridIndexLeft(const Point2f& pt, int GridType) {
+int getGridIndexLeft(const Point2f& pt, int GridType) {
 	int x = 0, y = 0;
 
 	//NO SHIFTING
@@ -345,19 +362,19 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 	*            to ensure that keypoints that fall on the grid border
 	*            of the original grid are not excluded.
 	*/
-	void AssignMatchPairs(int GridType);
+	void assignMatchPairs(int GridType);
 
 	/** Verify Cell Pairs
-	* @pre       AssignMatchPairs was called to fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+	* @pre       assignMatchPairs was called to fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
 	* @post      Sets mCellPairs to -1 if no matches were found between a cell in the left and a cell in the right.
 	*            Sets mCellPairs[i] to j (the index of the cell in the right image) if there is a match.
-	* @param     RotationType is one of 8 rotation patterns.
+	* @param     rotationType is one of 8 rotation patterns.
 	*/
-	void VerifyCellPairs(int RotationType);
+	void verifyCellPairs(int rotationType);
 
 	/** Get Neighbor 9
 	* @pre       There is a grid on an image.
-	*            InitializeNeighbors calls this function.
+	*            initializeNeighbors calls this function.
 	* @post      Fill in NB9 with indexes for the neighbors for one cell.
 	* @param	 idx is the index of ONE CELL in the grid.
 	* @param     gridSize is the dimensions of the grid (20 by 20)
@@ -413,7 +430,7 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 	* @param	 neighbor is the matrix of neighbors (400 by 9) for one grid / image
 	* @param     gridSize is the dimensions of one grid
 	*/
-	void InitializeNeighbors(Mat& neighbor, const Size& gridSize) {
+	void initializeNeighbors(Mat& neighbor, const Size& gridSize) {
 
 		//Repeat for ALL CELLS in the grid (400 cells if 20 by 20)
 		for (int i = 0; i < neighbor.rows; i++)
@@ -436,18 +453,18 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 	*            to make sure that 5 different scales are tried.
 	* @post      Initialize the neighbor vector for the right image.
 	*            In other words, fill the mGridNeighborRight vector.
-	* @param	 Scale is one of 5 possible scales.
+	* @param	 scale is one of 5 possible scales.
 	*/
-	void SetScale(int Scale) {
+	void setScale(int scale) {
 
-		// Set Scale
-		mGridSizeRight.width = mGridSizeLeft.width * mScaleRatios[Scale];
-		mGridSizeRight.height = mGridSizeLeft.height * mScaleRatios[Scale];
+		// Set scale
+		mGridSizeRight.width = mGridSizeLeft.width * mScaleRatios[scale];
+		mGridSizeRight.height = mGridSizeLeft.height * mScaleRatios[scale];
 		totalNumberOfCellsRight = mGridSizeRight.width * mGridSizeRight.height;
 
 		// Initialize the neighbors of right grid 
 		mGridNeighborRight = Mat::zeros(totalNumberOfCellsRight, 9, CV_32SC1);
-		InitializeNeighbors(mGridNeighborRight, mGridSizeRight);
+		initializeNeighbors(mGridNeighborRight, mGridSizeRight);
 
 	}
 
@@ -457,12 +474,12 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 	*            will be initialized to false.
 	*            As the algorithm goes through each iteration,
 	*            more inliers are found and added.
-	*            This calls the AssignMatchPairs and VerifyCellPairs functions.
-	* @param     RotationType is one of 8 rotation patterns.
-	*            This is needed for the VerifyCellPairs method.
+	*            This calls the assignMatchPairs and verifyCellPairs functions.
+	* @param     rotationType is one of 8 rotation patterns.
+	*            This is needed for the verifyCellPairs method.
 	* @return    The number of inliers
 	*/
-	int run(int RotationType);
+	int run(int rotationType);
 
 };
 
@@ -488,7 +505,7 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 
 	if (!WithScale && !WithRotation)
 	{
-		SetScale(0);						//SetScale(0) indicates NO scaling
+		setScale(0);						//setScale(0) indicates NO scaling
 		max_inlier = run(1);				//run(1) indicates no rotation
 		inliersToReturn = mvbInlierMask;
 		return max_inlier;
@@ -498,14 +515,14 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 	{
 
 		//REPEAT FOR ALL 5 SCALES
-		for (int Scale = 0; Scale < 5; Scale++)
+		for (int scale = 0; scale < 5; scale++)
 		{
-			SetScale(Scale);
+			setScale(scale);
 
 			//REPEAT FOR ALL 8 ROTATION TYPES
-			for (int RotationType = 1; RotationType <= 8; RotationType++)
+			for (int rotationType = 1; rotationType <= 8; rotationType++)
 			{
-				int num_inlier = run(RotationType);
+				int num_inlier = run(rotationType);
 
 				if (num_inlier > max_inlier)
 				{
@@ -520,11 +537,11 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 
 	if (WithRotation && !WithScale)
 	{
-		SetScale(0);				//SetScale(0) indicates NO scaling
+		setScale(0);				//setScale(0) indicates NO scaling
 
-		for (int RotationType = 1; RotationType <= 8; RotationType++)
+		for (int rotationType = 1; rotationType <= 8; rotationType++)
 		{
-			int num_inlier = run(RotationType);
+			int num_inlier = run(rotationType);
 
 			if (num_inlier > max_inlier)
 			{
@@ -537,9 +554,9 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 
 	if (!WithRotation && WithScale)
 	{
-		for (int Scale = 0; Scale < 5; Scale++)
+		for (int scale = 0; scale < 5; scale++)
 		{
-			SetScale(Scale);
+			setScale(scale);
 
 			int num_inlier = run(1); //run(1) indicates no rotation
 
@@ -567,7 +584,7 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 *            to ensure that keypoints that fall on the grid border
 *            of the original grid are not excluded.
 */
-void gms_matcher::AssignMatchPairs(int GridType) {
+void gms_matcher::assignMatchPairs(int GridType) {
 
 	//For all the initial matches between the two images (including incorrect matches)
 	for (size_t i = 0; i < mNumberMatches; i++)
@@ -580,7 +597,7 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 		// Index locations depend on the GridType.
 		// Get the grid index for the left point (.first indicates LEFT)
 		// Simultaneously, set mvMatchPairs[i].first
-		int lgidx = mvMatchPairs[i].first = GetGridIndexLeft(lp, GridType);
+		int lgidx = mvMatchPairs[i].first = getGridIndexLeft(lp, GridType);
 		int rgidx = -1;
 
 		// GridType == 1 indicates no movement of the grid position
@@ -609,15 +626,15 @@ void gms_matcher::AssignMatchPairs(int GridType) {
 }
 
 /** Verify Cell Pairs
-* @pre       AssignMatchPairs was called to fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
+* @pre       assignMatchPairs was called to fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
 * @post      Sets mCellPairs to -1 if no matches were found between a cell in the left and a cell in the right.
 *            Sets mCellPairs[i] to j (the index of the cell in the right image) if there is a match.
-* @param     RotationType is one of 8 rotation patterns.
+* @param     rotationType is one of 8 rotation patterns.
 */
-void gms_matcher::VerifyCellPairs(int RotationType) {
+void gms_matcher::verifyCellPairs(int rotationType) {
 
 	// Set the rotation pattern
-	const int* CurrentRP = mRotationPatterns[RotationType - 1];
+	const int* CurrentRP = mRotationPatterns[rotationType - 1];
 
 	// For all the cells in the left grid
 	for (int i = 0; i < totalNumberOfCellsLeft; i++)
@@ -675,7 +692,7 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 			// and all the neighboring cells around it within both the LEFT and the RIGHT images.
 			score += mMotionStatistics.at<int>(ll, rr);
 
-			//++++++++++++++++++++++++++ border conditions ++++++++++++++++++++++++++++++++++//
+			//++++++++++++++++++++++++++ BORDER CONDITIONS ++++++++++++++++++++++++++++++++++//
 			// Increase the score for a border cell
 			if (borderCellsLeft[ll] || borderCellsRight[rr])
 				score++;
@@ -702,12 +719,12 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 *            will be initialized to false.
 *            As the algorithm goes through each iteration,
 *            more inliers are found and added.
-*            This calls the AssignMatchPairs and VerifyCellPairs functions.
-* @param     RotationType is one of 8 rotation patterns.
-*            This is needed for the VerifyCellPairs method.
+*            This calls the assignMatchPairs and verifyCellPairs functions.
+* @param     rotationType is one of 8 rotation patterns.
+*            This is needed for the verifyCellPairs method.
 * @return    The number of inliers
 */
-int gms_matcher::run(int RotationType) {
+int gms_matcher::run(int rotationType) {
 
 	// Initialize all matches to false at first
 	mvbInlierMask.assign(mNumberMatches, false);
@@ -731,10 +748,10 @@ int gms_matcher::run(int RotationType) {
 		mNumberPointsInPerCellLeft.assign(totalNumberOfCellsLeft, 0);
 
 		// Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors
-		AssignMatchPairs(GridType);
+		assignMatchPairs(GridType);
 
 		// Fill in the mCellPairs vector
-		VerifyCellPairs(RotationType);
+		verifyCellPairs(rotationType);
 
 		// Mark inliers
 		for (size_t i = 0; i < mNumberMatches; i++)
