@@ -1,9 +1,14 @@
 // Breanna Powell
-// 
-// Original Author: Jiawang Bian, Postdoctoral Researcher
-// 
-// 
+// Goal 1: Border cell adjustment
+// Goal 2: Grid adjustment for larger image sizes
+
+// This is based on 
+// GMS: Grid - based Motion Statistics for Fast, Ultra - robust Feature Correspondence.
+// JiaWang Bian, Wen - Yan Lin, Yasuyuki Matsushita, Sai - Kit Yeung, Tan Dat Nguyen, Ming - Ming Cheng
+// IEEE CVPR, 2017
+// ProjectPage : http ://jwbian.net/gms
 // https://github.com/JiawangBian/GMS-Feature-Matcher/blob/master/include/gms_matcher.h
+
 
 #pragma once
 #include <opencv2/opencv.hpp>
@@ -255,7 +260,7 @@ int GetGridIndexLeft(const Point2f& pt, int GridType) {
 		}
 	}
 
-	//SHIFT IN X DIRECTION
+	//SHIFT IN X DIRECTION (moves the grid to the right)
 	if (GridType == 2) {
 		x = floor(pt.x * mGridSizeLeft.width + 0.5);
 		y = floor(pt.y * mGridSizeLeft.height);
@@ -265,7 +270,7 @@ int GetGridIndexLeft(const Point2f& pt, int GridType) {
 		}
 	}
 
-	//SHIFT IN THE Y DIRECTION
+	//SHIFT IN THE Y DIRECTION (moves the grid down)
 	if (GridType == 3) {
 		x = floor(pt.x * mGridSizeLeft.width);
 		y = floor(pt.y * mGridSizeLeft.height + 0.5);
@@ -275,7 +280,7 @@ int GetGridIndexLeft(const Point2f& pt, int GridType) {
 		}
 	}
 
-	//SHIFT IN THE X AND Y DIRECTION
+	//SHIFT IN THE X AND Y DIRECTION (moves right and down again)
 	if (GridType == 4) {
 		x = floor(pt.x * mGridSizeLeft.width + 0.5);
 		y = floor(pt.y * mGridSizeLeft.height + 0.5);
@@ -670,9 +675,10 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 			// and all the neighboring cells around it within both the LEFT and the RIGHT images.
 			score += mMotionStatistics.at<int>(ll, rr);
 
-			// TODO --- add a conditional here that will increase the score for a border cell
-
-
+			//++++++++++++++++++++++++++ border conditions ++++++++++++++++++++++++++++++++++//
+			// Increase the score for a border cell
+			if (borderCellsLeft[ll] || borderCellsRight[rr])
+				score++;
 
 			// The threshold is a function of how many matches were found within that cell
 			// and all the neighboring cells around it within the LEFT image alone.
