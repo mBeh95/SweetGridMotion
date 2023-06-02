@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -147,6 +147,7 @@ opencv_features2d470d.lib;opencv_imgproc470d.lib;%(AdditionalDependencies)</Addi
     <ClInclude Include="gms_matcher_original_with_comments.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="calculateMetrics.cpp" />
     <ClCompile Include="gms_commented_refactored.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
