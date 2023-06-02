@@ -15,6 +15,7 @@ using namespace std;
 // Use homography
 void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2) {
 
+    // Load homography file
     FileStorage file = FileStorage("homography file.xml", 0);
     Mat homography = file.getFirstTopLevelNode().mat();
     cout << "Homography from img1 to img2" << homography << endl;
@@ -22,38 +23,35 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2) {
     Mat descriptors1;
     Mat descriptors2;
 
-    BFMatcher matcher(NORM_L2);
-    vector<vector<DMatch> > matches;
-    matcher.knnMatch(descriptors1, descriptors2, matches, 2);
-
     vector<KeyPoint>matched1;
     vector<KeyPoint>matched2;
 
+    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
+    vector<vector<DMatch>> matches;
+    matcher->knnMatch(descriptors1, descriptors2, matches, 2);
+    vector<KeyPoint> matched1, matched2;
     double nearestNeighborMatchingRatio = 0.8;
 
-    for (int i = 0; i < matches.size(); i++) {
-    //    if (matches.at(i) < nearestNeighborMatchingRatio * matches) {
-    //        matched1.push_back(vkp1[matches.queryIdx]);
-    //        matched2.push_back(vkp2[matches.trainIdx]);
-    //    }
-
+    for (size_t i = 0; i < matches.size(); i++) {
+        DMatch first = matches[i][0];
+        float dist1 = matches[i][0].distance;
+        float dist2 = matches[i][1].distance;
+        if (dist1 < nearestNeighborMatchingRatio * dist2) {
+            matched1.push_back(vkp1[first.queryIdx]);
+            matched2.push_back(vkp2[first.trainIdx]);
+        }
     }
+
+    vector<KeyPoint>inliers1;
+    vector<KeyPoint>inliers2;
 
 }
 
 /*
-for m, n in nn_matches:
-    if m.distance < nn_match_ratio * n.distance:
-        matched1.append(kpts1[m.queryIdx])
-        matched2.append(kpts2[m.trainIdx])
 
-Since we know the correct geometric transformation 
-lets check how many of the matches are correct (inliners). 
 We will consider a mach as valid if its point in image 2 and its point 
 from image 1 projected to image 2 are less than 2.5 pixels away.
 
-inliers1 = []
-inliers2 = []
 good_matches = []
 inlier_threshold = 2.5  # Distance threshold to identify inliers with homography check
 for i, m in enumerate(matched1):
