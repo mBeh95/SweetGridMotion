@@ -31,9 +31,10 @@ Mat drawInlier(Mat& src1, Mat& src2, vector<KeyPoint>& kpt1, vector<KeyPoint>& k
 void runImagePair() {
 	//Both images are retrieved.
 	//Must be in the same folder as cpp file
+	//                          0         1          2                 3             4                5            6              7                8
 	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
 	Mat img1 = imread(photoNames[0]);
-	Mat img2 = imread(photoNames[7]);
+	Mat img2 = imread(photoNames[5]);
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
