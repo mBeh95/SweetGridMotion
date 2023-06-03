@@ -97,6 +97,9 @@ public:
 		// Total number of cells in the grid (20 * 20)
 		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height;
 
+		// The border cells vector should be the size of the total number of cells in the left grid.
+		borderCellsLeft.resize(totalNumberOfCellsLeft);
+
 		// The mGridNeighborLeft matrix is size 400 by 9 by default
 		// The zeros function takes in the number of rows, columns, and data type
 		// and fills the matrix with 0s.
@@ -353,8 +356,6 @@ int getGridIndexRight(const Point2f& pt) {
 */
 void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, int height) {
 
-	borderCells.resize(totalSize);
-
 	// Mark as true for the for the side edges
 	for (int i = 1; i < height - 2; i++){
 		borderCells[height * i] = true;				 // Left edge of grid
@@ -478,6 +479,9 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 		mGridSizeRight.width = mGridSizeLeft.width * mScaleRatios[scale];
 		mGridSizeRight.height = mGridSizeLeft.height * mScaleRatios[scale];
 		totalNumberOfCellsRight = mGridSizeRight.width * mGridSizeRight.height;
+
+		// Set the size of the border cells vector -- Breanna's addition
+		borderCellsRight.resize(totalNumberOfCellsRight);
 
 		// Initialize the neighbors of right grid 
 		mGridNeighborRight = Mat::zeros(totalNumberOfCellsRight, 9, CV_32SC1);
