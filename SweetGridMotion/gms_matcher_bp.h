@@ -72,7 +72,7 @@ public:
 	*            Converts the matches to pairs of points.
 	*            Creates one grid per image.
 	*            Initializes the neighbor vectors for both grids.
-	* @param	 vkp1 is the keypoints from image 1 (left image)
+	* @param	 vkp1 is the keypoints from image 1 (left image).
 	* @param     size1 is the dimensions of image 1 (left image).
 	* @param	 vkp2 is the keypoints from image 2 (right image).
 	* @param	 size2 is the dimensions of image 2 (right image).
@@ -111,6 +111,8 @@ public:
 
 private:
 
+	//+++++++++++++++++++++++++ INITIALIZED BY THE CONSTRUCTOR ++++++++++++++++++++++++++++//
+
 	// Normalized Points - filled during the normalizePoints function
 	vector<Point2f> normalizedPoints1, normalizedPoints2;
 
@@ -136,13 +138,15 @@ private:
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
 	Mat mGridNeighborRight; //Initialized in the setScale function from GetInlierMask - depends on scale
 
+	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
+
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
 	// Note   : incremented in the assignMatchPairs function
 	Mat mMotionStatistics;
 
-	// incremented in the assignMatchPairs function
+	// The points found per grid cell in the LEFT image -- incremented in the AssignMatchPairs function
 	vector<int> mNumberPointsInPerCellLeft;
 
 	// mCellPairs - a one-dimensional vector that holds an index to the RIGHT image if there is a match.

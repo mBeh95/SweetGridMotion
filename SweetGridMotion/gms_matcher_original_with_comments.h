@@ -124,6 +124,8 @@ public:
 
 private:
 
+	//+++++++++++++++++++++++++ INITIALIZED BY THE CONSTRUCTOR ++++++++++++++++++++++++++++//
+
 	// Normalized Points - filled during the NormalizePoints function
 	vector<Point2f> normalizedPoints1, normalizedPoints2;
 
@@ -149,13 +151,15 @@ private:
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
 	Mat mGridNeighborRight; //Initialized in the SetScale function from GetInlierMask - depends on scale
 
+	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
+	
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
 	// Note   : incremented in the AssignMatchPairs function
 	Mat mMotionStatistics;
 
-	// incremented in the AssignMatchPairs function
+	// The points found per grid cell in the LEFT image -- incremented in the AssignMatchPairs function
 	vector<int> mNumberPointsInPerCellLeft;
 
 	// mCellPairs - a one-dimensional vector that holds an index to the RIGHT image if there is a match.
