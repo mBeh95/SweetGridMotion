@@ -124,19 +124,19 @@ private:
 
 	// Grid Size - 20 by 20
 	// Note: left is the first image; right is the second image
-	// mGridSizeLeft has a width and a height -- 20 by 20 by default
-	// mGridSizeRight is set during the setScale function - varies by scale
+	// mGridSizeLeft is set in the constructor with a fixed width and height -- 20 by 20 by default
+	// mGridSizeRight is set at runtime during the setScale function - varies by scale
 	Size mGridSizeLeft, mGridSizeRight;
 
-	// How many cells total are in the left image's grid?
+	// How many cells total are in the left image's grid? -- initialized by constructor
 	int totalNumberOfCellsLeft;
 
-	// How many cells total are in the right image's grid?
+	// How many cells total are in the right image's grid? -- initialized at runtime
 	int totalNumberOfCellsRight;
 
 	// All possible neighbors for all possible cells in each grid (left and right grid / image)
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
-	Mat mGridNeighborRight; //Initialized in the setScale function from GetInlierMask - depends on scale
+	Mat mGridNeighborRight; //Initialized at runtime in the SetScale function from GetInlierMask - depends on scale
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 
@@ -352,6 +352,8 @@ int getGridIndexRight(const Point2f& pt) {
 *            height is the height of the grid (20 if 20 by 20).
 */
 void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, int height) {
+
+	borderCells.resize(totalSize);
 
 	// Mark as true for the for the side edges
 	for (int i = 1; i < height - 2; i++){

@@ -95,9 +95,7 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
     cout << "Total keypoints found in image 2: " << vkp2.size() << endl;
     cout << "Total matches found:              " << matches.size() << endl;
     cout << "Total inliers found:              " << inliers1.size() << endl;
-    cout << "Percentage of inliers:            " << 100* inliers1.size()/ matches.size() << "%" << endl;
+    cout << "Precision = T P / (T P + F P):    " << 100 * inliers1.size() / matches.size() << "%" << endl;
+    cout << "Recall = T P / (T P + F N):       " << endl;
 
 }
-
-//Precision = T P / (T P + F P)
-//Recall = T P / (T P + F N)
