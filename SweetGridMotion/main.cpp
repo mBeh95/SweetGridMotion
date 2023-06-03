@@ -15,9 +15,9 @@
 #include <opencv2/flann.hpp>
 #include <iostream>
 
-//#include "gms_matcher.h"
+#include "gms_matcher.h"
 //#include "gms_matcher_mb.h"
-#include "gms_matcher_bp.h"
+//#include "gms_matcher_bp.h"
 using namespace cv;
 using namespace xfeatures2d;
 using namespace cuda;
@@ -31,9 +31,9 @@ Mat drawInlier(Mat& src1, Mat& src2, vector<KeyPoint>& kpt1, vector<KeyPoint>& k
 void runImagePair() {
 	//Both images are retrieved.
 	//Must be in the same folder as cpp file
-	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg"}
-	Mat img1 = imread("01.jpg");
-	Mat img2 = imread("02_Zoomed.jpg");
+	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
+	Mat img1 = imread(photoNames[0]);
+	Mat img2 = imread(photoNames[7]);
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
