@@ -55,9 +55,12 @@ int main()
 //* 
 //* @post      none.
 //*            
-//* @param	 img1 is the Mat of image 1 (Left image)
-//* @param	 img2 is the Mat of image 2 (Right image)
-//*
+//* @param	 src1 is the Mat of image 1 (Left image)
+//* @param	 src2 is the Mat of image 2 (Right image)
+//* @param	 kpt1 is the keypoints from image 1 (Left image).
+//* @param	 kpt2 is the keypoints from image 2 (right image).
+//* @param	 vector inlier is the true inlier matches between the keypoints,
+//* @param   type is the type of graph the user want to view (Only 1 and 2 are availiable)
 //*            
 //*/
 
