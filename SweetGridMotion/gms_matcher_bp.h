@@ -140,6 +140,13 @@ private:
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 
+	// Every match between two points has a corresponding cell-pair too
+	// This is initialized in the assignMatchPairs function
+	// first  : grid_idx_left - mvMatchPairs[i].first = LEFT
+	// second : grid_idx_right - mvMatchPairs[i].second = RIGHT
+	// Size   : the total number of matches found initially
+	vector<pair<int, int> > mvMatchPairs;
+
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
@@ -156,13 +163,6 @@ private:
 	// Value  : grid_idx_right - mCellPairs[i] = j is the grid index from the RIGHT image (or -1 if no matches)
 	// Size   : the total number of cells in the grid
 	vector<int> mCellPairs;
-
-	// Every match between two points has a corresponding cell-pair too
-	// This is initialized in the assignMatchPairs function
-	// first  : grid_idx_left - mvMatchPairs[i].first = LEFT
-	// second : grid_idx_right - mvMatchPairs[i].second = RIGHT
-	// Size   : the total number of matches found initially
-	vector<pair<int, int> > mvMatchPairs;
 
 	// Inlier Mask for output
 	// Size   : the total number of matches found initially

@@ -1,9 +1,9 @@
-//Precision = T P / (T P + F P)
-//recall = T P / (T P + F N)
+// Use the homography between two images to check for true inliers.
 
 #include <opencv2/core.hpp>             // namespace cv
 #include <opencv2/core/persistence.hpp> // https://docs.opencv.org/3.4/da/d56/classcv_1_1FileStorage.html
 #include <opencv2/features2d.hpp>       // Brute force matcher
+#include <opencv2/highgui.hpp>          // imshow
 #include <iostream>
 
 // Modified code from 
@@ -13,25 +13,33 @@ using namespace cv;
 using namespace std;
 
 // Use homography
-void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2) {
+void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
+    Mat& img1, Mat& img2) {
 
     // Load homography file
-    FileStorage file = FileStorage("homography file.xml", 0);
+    FileStorage file = FileStorage("homography.xml", 0);
     Mat homography = file.getFirstTopLevelNode().mat();
     cout << "Homography from img1 to img2" << homography << endl;
 
-    Mat descriptors1;
-    Mat descriptors2;
+    // Hold the descriptors for images 1 and 2.
+    Mat descriptors1, descriptors2;
 
-    vector<KeyPoint>matched1;
-    vector<KeyPoint>matched2;
-
+    // Use a brute force hamming distance matcher
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
+    
+    // Collect all the matches between the two images
     vector<vector<DMatch>> matches;
+
+    // Do KNN matching and fill the descriptors1 and descriptors2 vectors.
     matcher->knnMatch(descriptors1, descriptors2, matches, 2);
+
+    // Hold all the keypoints that pass Lowe's Ratio Test
     vector<KeyPoint> matched1, matched2;
+
+    // Lowe's Ratio test threshold
     double nearestNeighborMatchingRatio = 0.8;
 
+    // Use Lowe's Ratio test to ensure the descriptors are similar.
     for (size_t i = 0; i < matches.size(); i++) {
         DMatch first = matches[i][0];
         float dist1 = matches[i][0].distance;
@@ -42,67 +50,54 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2) {
         }
     }
 
-    vector<KeyPoint>inliers1;
-    vector<KeyPoint>inliers2;
+    // Hold only the inliers 
+    vector<KeyPoint>inliers1, inliers2;
+
+    // Hold only the good matches
+    vector<DMatch> good_matches;
+    
+    // Distance threshold:
+    // A good match is fewer than 2.5 pixels
+    // from where the homography says it should be
+    double inlier_threshold = 2.5;
+    
+    // For all the matches, check to see if they
+    // fall within the area that the homography says they will
+    for (int i = 0; i < matched1.size(); i++) {
+
+        // Create a mat where the calculation can happen
+        Mat col = Mat::ones(3, 1, CV_64F);
+
+        // Fill the mat with the x, y coordinates of image1
+        col.at<double>(0, 0) = matched1[i].pt.x;
+        col.at<double>(1, 0) = matched1[i].pt.y;
+        
+        // Project the point from image1 to image2
+        col = homography * col;
+        col /= col.at<double>(2, 0);
+        
+        // Find the euclidean distance between the projected point
+        // on image2 and the match that was found in image2.
+        double dist = sqrt(pow(col.at<double>(0, 0) - matched2[i].pt.x, 2) 
+            + pow(col.at<double>(1, 0) - matched2[i].pt.y, 2));
+        
+        // If the distance was within 2.5 pixels add it to the inliers vectors.
+        if (dist < inlier_threshold) {
+            good_matches.push_back(DMatch(inliers1.size(), inliers2.size(), 0));
+            inliers1.push_back(matched1[i]);
+            inliers2.push_back(matched2[i]);
+        }
+    }
+
+    // Print the results
+
+    cout << "Total keypoints found in image 1: " << vkp1.size() << endl;
+    cout << "Total keypoints found in image 2: " << vkp2.size() << endl;
+    cout << "Total matches found:              " << matches.size() << endl;
+    cout << "Total inliers found:              " << inliers1.size() << endl;
+    cout << "Percentage of inliers:            " << 100* inliers1.size()/ matches.size() << "%" << endl;
 
 }
 
-/*
-
-We will consider a mach as valid if its point in image 2 and its point 
-from image 1 projected to image 2 are less than 2.5 pixels away.
-
-good_matches = []
-inlier_threshold = 2.5  # Distance threshold to identify inliers with homography check
-for i, m in enumerate(matched1):
-    # Create the homogeneous point
-    col = np.ones((3, 1), dtype=np.float64)
-    col[0:2, 0] = m.pt
-    # Project from image 1 to image 2
-    col = np.dot(homography, col)
-    col /= col[2, 0]
-    # Calculate euclidean distance
-    dist = sqrt(pow(col[0, 0] - matched2[i].pt[0], 2) + pow(col[1, 0] - matched2[i].pt[1], 2))
-    if dist < inlier_threshold:
-        good_matches.append(cv.DMatch(len(inliers1), len(inliers2), 0))
-        inliers1.append(matched1[i])
-        inliers2.append(matched2[i])
-
-Now that we have the correct matches inside inliers1 and inliers2 variables, we can evaluate the results qualitative using cv.drawMatches. Each of the corresponding points can help us in higher level tasks such as homography estimation, Perspective-n-Point, plane tracking, real-time pose estimation or images stitching.
-
-res = np.empty((max(img1.shape[0], img2.shape[0]), img1.shape[1] + img2.shape[1], 3), dtype=np.uint8)
-cv.drawMatches(img1, inliers1, img2, inliers2, good_matches, res)
-plt.figure(figsize=(15, 5))
-plt.imshow(res)
-
-Since it is hard to compare qualitative this kind of results, lets plot some quantitative evaluation metrics. The metric that best reflects how reliable is our descriptor is the percentage of inliers:
-
-
-Matching Results (BEBLID)
-*******************************
-# Keypoints 1:                          9105
-# Keypoints 2:                          9927
-# Matches:                              660
-# Inliers:                              512
-# Percentage of Inliers:                77.57%
-Using the BEBLID descriptor obtains a 77.57% of inliers. If we comment BEBLID and uncomment ORB descriptor in the description cell, the results drop to 63.20%:
-
-
-Matching Results (ORB)
-*******************************
-# Keypoints 1:                          9105
-# Keypoints 2:                          9927
-# Matches:                              780
-# Inliers:                              493
-# Percentage of Inliers:                63.20%
-
-# Comment or uncomment to use ORB or BEBLID
-# descriptor = cv.xfeatures2d.BEBLID_create(0.75)
-descriptor = cv.ORB_create()
-kpts1, desc1 = descriptor.compute(img1, kpts1)
-kpts2, desc2 = descriptor.compute(img2, kpts2)
-
-
-In conclusion, changing only one line of code to replace ORB descriptor with BEBLID we can improve the matching result of these two images a 14%. This can have a big impact in higher level tasks that need local feature matching to work so do not hesitate, give BEBLID a try!
-
-*/
+//Precision = T P / (T P + F P)
+//Recall = T P / (T P + F N)
