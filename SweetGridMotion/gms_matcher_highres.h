@@ -1,5 +1,4 @@
 // Breanna Powell
-// Goal 1: Border cell adjustment
 // Goal 2: Grid adjustment for larger image sizes
 
 // This is based on 
@@ -88,17 +87,14 @@ public:
 		mNumberMatches = vDMatches.size();					//How many matches were found?
 		convertMatches(vDMatches, initialMatches);			//Fill initialMatches with pairs of points
 
-		// Grid size initialization
-		// Note that mGridSizeLeft has a width and a height
 
 		// +++++++++++++++++++++++++++++++++ DYNAMIC GRID SIZING +++++++++++++++++++++++++++++++++//
+		// Grid size initialization
+		// Note that mGridSizeLeft has a width and a height
 		mGridSizeLeft = setGridSize(size1);
 
 		// Total number of cells in the grid (20 * 20)
 		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height;
-
-		// The border cells vector should be the size of the total number of cells in the left grid.
-		borderCellsLeft.resize(totalNumberOfCellsLeft);
 
 		// The mGridNeighborLeft matrix is size 400 by 9 by default
 		// The zeros function takes in the number of rows, columns, and data type
@@ -171,12 +167,6 @@ private:
 	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
 
-	// Breanna's addition
-	// True if an edge
-	// Index  : grid_idx_left
-	// Value  : grid_idx_right
-	// Size   : the total number of cells in the grid
-	vector<bool> borderCellsLeft, borderCellsRight;
 
 public:
 
@@ -343,33 +333,6 @@ int getGridIndexRight(const Point2f& pt) {
 }
 
 
-/** Initialize Border Cells
-* @pre       A GMS matcher object was constructed.
-* @post      Fill the borderCells vector with true for any cell that is a border.
-*            This needs to be run once for the left and once for the right grid
-*            if there are changes to the right grid dimensions 
-*            (i.e. we do 20 by 20 for left an 40 by 40 for the right)
-* @param     totalSize is the total number of cells in the grid (ex. 400 if 20 by 20).
-*			 (totalNumberOfCellsLeft or totalNumberOfCellsRight).
-* @param     width is the width of the grid (20 if 20 by 20).
-*            height is the height of the grid (20 if 20 by 20).
-*/
-void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, int height) {
-
-	// Mark as true for the for the side edges
-	for (int i = 1; i < height - 2; i++){
-		borderCells[height * i] = true;				 // Left edge of grid
-		borderCells[height * i + width - 1] = true;	 // Right edge of grid
-	}
-	
-	// Mark as true for the first row and the last row
-	for (int i = 0; i < width; i++) {
-		borderCells[i] = true;				       // First row
-		borderCells[totalSize - width + i] = true; // Last row
-	}
-}
-
-
 	/** Assign Match Pairs
 	* @pre       The public GetInlierMask function called the run function,
 	*            which called this function.
@@ -479,9 +442,6 @@ void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, 
 		mGridSizeRight.width = mGridSizeLeft.width * mScaleRatios[scale];
 		mGridSizeRight.height = mGridSizeLeft.height * mScaleRatios[scale];
 		totalNumberOfCellsRight = mGridSizeRight.width * mGridSizeRight.height;
-
-		// Set the size of the border cells vector -- Breanna's addition
-		borderCellsRight.resize(totalNumberOfCellsRight);
 
 		// Initialize the neighbors of right grid 
 		mGridNeighborRight = Mat::zeros(totalNumberOfCellsRight, 9, CV_32SC1);
@@ -712,11 +672,6 @@ void gms_matcher::verifyCellPairs(int rotationType) {
 			// Increment the score, using the number of matches found within that cell (from mMotionStatistics)
 			// and all the neighboring cells around it within both the LEFT and the RIGHT images.
 			score += mMotionStatistics.at<int>(ll, rr);
-
-			//++++++++++++++++++++++++++ BORDER CONDITIONS ++++++++++++++++++++++++++++++++++//
-			// Increase the score for a border cell
-			if (borderCellsLeft[ll] || borderCellsRight[rr])
-				score++;
 
 			// The threshold is a function of how many matches were found within that cell
 			// and all the neighboring cells around it within the LEFT image alone.

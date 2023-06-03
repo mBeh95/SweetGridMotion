@@ -21,13 +21,16 @@
     <ClInclude Include="gms_matcher_mb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gms_matcher_bp.h">
+    <ClInclude Include="gms_matcher_borders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gms_matcher_original_with_comments.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="calculateMetrics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gms_matcher_highres.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
