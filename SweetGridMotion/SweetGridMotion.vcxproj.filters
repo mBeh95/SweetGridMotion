@@ -27,6 +27,9 @@
     <ClInclude Include="gms_matcher_original_with_comments.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="calculateMetrics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

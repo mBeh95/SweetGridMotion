@@ -1,5 +1,6 @@
 // Use the homography between two images to check for true inliers.
 
+#pragma once
 #include <opencv2/core.hpp>             // namespace cv
 #include <opencv2/core/persistence.hpp> // https://docs.opencv.org/3.4/da/d56/classcv_1_1FileStorage.html
 #include <opencv2/features2d.hpp>       // Brute force matcher
@@ -26,7 +27,7 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
 
     // Use a brute force hamming distance matcher
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
-    
+
     // Collect all the matches between the two images
     vector<vector<DMatch>> matches;
 
@@ -55,12 +56,12 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
 
     // Hold only the good matches
     vector<DMatch> good_matches;
-    
+
     // Distance threshold:
     // A good match is fewer than 2.5 pixels
     // from where the homography says it should be
     double inlier_threshold = 2.5;
-    
+
     // For all the matches, check to see if they
     // fall within the area that the homography says they will
     for (int i = 0; i < matched1.size(); i++) {
@@ -71,16 +72,16 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
         // Fill the mat with the x, y coordinates of image1
         col.at<double>(0, 0) = matched1[i].pt.x;
         col.at<double>(1, 0) = matched1[i].pt.y;
-        
+
         // Project the point from image1 to image2
         col = homography * col;
         col /= col.at<double>(2, 0);
-        
+
         // Find the euclidean distance between the projected point
         // on image2 and the match that was found in image2.
-        double dist = sqrt(pow(col.at<double>(0, 0) - matched2[i].pt.x, 2) 
+        double dist = sqrt(pow(col.at<double>(0, 0) - matched2[i].pt.x, 2)
             + pow(col.at<double>(1, 0) - matched2[i].pt.y, 2));
-        
+
         // If the distance was within 2.5 pixels add it to the inliers vectors.
         if (dist < inlier_threshold) {
             good_matches.push_back(DMatch(inliers1.size(), inliers2.size(), 0));
