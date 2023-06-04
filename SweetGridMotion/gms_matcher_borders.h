@@ -328,16 +328,22 @@ int getGridIndexRight(const Point2f& pt) {
 */
 void initializeBorderCells(vector<bool>& borderCells, int totalSize, int width, int height) {
 
+
 	// Mark as true for the for the side edges
 	for (int i = 1; i < height - 2; i++){
-		borderCells[height * i] = true;				 // Left edge of grid
-		borderCells[height * i + width - 1] = true;	 // Right edge of grid
+		int left = height * i;               // Left edge of grid
+		int right = height * i + width - 1;  // Right edge of grid
+
+		borderCells[left] = true;	
+		borderCells[right] = true;	 
 	}
 	
 	// Mark as true for the first row and the last row
 	for (int i = 0; i < width; i++) {
-		borderCells[i] = true;				       // First row
-		borderCells[totalSize - width + i] = true; // Last row
+		int bottomRow = totalSize - width + i;
+
+		borderCells[i] = true;		   // First row
+		borderCells[bottomRow] = true; // Last row
 	}
 }
 
@@ -687,8 +693,10 @@ void gms_matcher::verifyCellPairs(int rotationType) {
 
 			//++++++++++++++++++++++++++ BORDER CONDITIONS ++++++++++++++++++++++++++++++++++//
 			// Increase the score for a border cell
-			if (borderCellsLeft[ll] || borderCellsRight[rr])
-				score++;
+			if (borderCellsLeft[ll] || borderCellsRight[rr]) {
+				int borderThresh = totalNumberOfCellsLeft / mGridSizeLeft.width;
+				score += borderThresh;
+			}
 
 			// The threshold is a function of how many matches were found within that cell
 			// and all the neighboring cells around it within the LEFT image alone.
