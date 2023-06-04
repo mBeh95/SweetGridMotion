@@ -117,6 +117,8 @@ public:
 
 		// Fill in the matrixes of the 400 by 9 cells with indexes to the neighbors per cell
 		InitializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
+
+		orientation = -1;
 	};
 
 	//Destructor
@@ -180,6 +182,11 @@ private:
 	// Inlier Mask for output
 	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
+
+	// Store the best orientation, to early stop when going through other grid types.
+	// if -1, then not set yet
+	// if greater than
+	int orientation;
 
 public:
 
@@ -478,6 +485,7 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 		return max_inlier;
 	}
 
+
 	if (WithRotation && WithScale)
 	{
 
@@ -486,31 +494,57 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 		{
 			SetScale(Scale);
 
-			// ++++++++++++++++++ REDUCING ROTATION COMPLEXITY ++++++++++++++//
-			for (int RotationType = 1; RotationType <= 4; RotationType++)
+			//REPEAT FOR ALL 8 ROTATION TYPES
+			for (int RotationType = 1; RotationType <= 8; RotationType++)
 			{
-				int num_inlierCW = run(RotationType);
-				vector<bool>& inliersCW = mvbInlierMask;
-				
-				int num_inlierCC = run(8 - RotationType -1);
-				vector<bool>& inliersCC = mvbInlierMask;
+				int num_inlier = run(RotationType);
 
-				if (num_inlierCW > max_inlier){
-					
+				if (num_inlier > max_inlier)
+				{
 					//Set the max_inlier
 					inliersToReturn = mvbInlierMask;
-					max_inlier = num_inlierCW;
-				}
-				else if (num_inlierCC > max_inlier) {
-
-					//Set the max_inlier
-					inliersToReturn = mvbInlierMask;
-					max_inlier = num_inlierCC;
+					max_inlier = num_inlier;
+					orientation = RotationType;
 				}
 			}
 		}
 		return max_inlier;
 	}
+
+	//if (WithRotation && WithScale)
+	//{
+
+	//	//REPEAT FOR ALL 5 SCALES
+	//	for (int Scale = 0; Scale < 5; Scale++)
+	//	{
+	//		SetScale(Scale);
+
+	//		// ++++++++++++++++++ REDUCING ROTATION COMPLEXITY ++++++++++++++//
+	//		for (int RotationType = 1; RotationType <= 4; RotationType++)
+	//		{
+	//			int num_inlierCW = run(RotationType);
+	//			vector<bool>& inliersCW = mvbInlierMask;
+	//			
+	//			int num_inlierCC = run(8 - RotationType -1);
+	//			vector<bool>& inliersCC = mvbInlierMask;
+
+	//			if (num_inlierCW > num_inlierCC && num_inlierCW > max_inlier) {
+	//				//Set the max_inlier
+	//				inliersToReturn = mvbInlierMask;
+	//				max_inlier = num_inlierCW;
+	//				orientation = RotationType;
+	//			}
+	//			else if (num_inlierCC > num_inlierCW && num_inlierCC > max_inlier) {
+
+	//				//Set the max_inlier
+	//				inliersToReturn = mvbInlierMask;
+	//				max_inlier = num_inlierCC;
+	//				orientation = RotationType;
+	//			}
+	//		}
+	//	}
+	//	return max_inlier;
+	//}
 
 	if (WithRotation && !WithScale)
 	{
@@ -524,6 +558,7 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 			{
 				inliersToReturn = mvbInlierMask;
 				max_inlier = num_inlier;
+				orientation = RotationType;
 			}
 		}
 		return max_inlier;

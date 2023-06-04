@@ -135,24 +135,30 @@ private:
 	// The original number of matches found between two images - initialized from the size of vDMatches 
 	size_t mNumberMatches;
 
-	// Grid Size - 20 by 20
+	// Grid Size for the 1st image - 20 by 20
 	// Note: left is the first image; right is the second image
 	// mGridSizeLeft is set in the constructor with a fixed width and height -- 20 by 20 by default
-	// mGridSizeRight is set at runtime during the setScale function - varies by scale
-	Size mGridSizeLeft, mGridSizeRight;
+	Size mGridSizeLeft;
 
-	// How many cells total are in the left image's grid? -- initialized by constructor
+	// How many cells total are in the left image's grid? Fixed number that does not change
 	int totalNumberOfCellsLeft;
 
-	// How many cells total are in the right image's grid? -- initialized at runtime
-	int totalNumberOfCellsRight;
-
-	// All possible neighbors for all possible cells in each grid (left and right grid / image)
+	// All possible neighbors for all possible cells in each grid (left grid / image)
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
-	Mat mGridNeighborRight; //Initialized at runtime in the SetScale function from GetInlierMask - depends on scale
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
-	
+
+	// Grid Size for the 2nd image
+	// Note: left is the first image; right is the second image
+	// mGridSizeRight is set at runtime during the setScale function - varies by scale
+	Size mGridSizeRight;
+
+	// How many cells total are in the right image's grid? Changes depending on scale.
+	int totalNumberOfCellsRight;
+
+	// All possible neighbors for all possible cells in each grid (right grid / image)
+	Mat mGridNeighborRight; //Initialized at runtime in the SetScale function from GetInlierMask - depends on scale
+
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
