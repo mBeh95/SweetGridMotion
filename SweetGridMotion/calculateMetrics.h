@@ -1,4 +1,4 @@
-// Use the homography between two images to check for true inliers.
+// Use the homography between two images to calculate how well GMS performed.
 
 #pragma once
 #include <opencv2/core.hpp>             // namespace cv
@@ -13,12 +13,26 @@
 using namespace cv;
 using namespace std;
 
-// Use homography
-void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
+/** Use homography to calculate the metrics
+* @pre       A homography file exists.
+*            A validation set of points exists.
+* @post      Open the homography file.
+*            Do KNN matching to filter out bad matches found by GMS.
+*            Pass those matches through Lowe's Ratio Test 
+*            to narrow down even more to just the good matches that GMS found.
+*            Calculate metrics, using ground truth homography 
+*            established by the makers of the dataset. 
+*            Print the metrics: Precision and Recall.
+* @param	 GMSkptsLeft is the keypoints GMS located from the first image (left image).
+* @param     GMSkptsRight is the keypoints GMS located from the second image (right image).
+* @param	 img1 is the first image (left image).
+* @param     img2 is the second image (right image).
+*/
+void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& GMSkptsRight,
     Mat& img1, Mat& img2) {
 
     // Load homography file
-    FileStorage file = FileStorage("homography.xml", 0);
+    FileStorage file = FileStorage("Eiffel_vpts.mat", 0);
     Mat homography = file.getFirstTopLevelNode().mat();
     cout << "Homography from img1 to img2" << homography << endl;
 
@@ -46,8 +60,8 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
         float dist1 = matches[i][0].distance;
         float dist2 = matches[i][1].distance;
         if (dist1 < nearestNeighborMatchingRatio * dist2) {
-            matched1.push_back(vkp1[first.queryIdx]);
-            matched2.push_back(vkp2[first.trainIdx]);
+            matched1.push_back(GMSkptsLeft[first.queryIdx]);
+            matched2.push_back(GMSkptsRight[first.trainIdx]);
         }
     }
 
@@ -90,13 +104,18 @@ void useHomography(const vector<KeyPoint>& vkp1, const vector<KeyPoint>& vkp2,
         }
     }
 
-    // Print the results
+    Mat trueInliers = file.operator[]("validation.pts").mat();
 
-    cout << "Total keypoints found in image 1: " << vkp1.size() << endl;
-    cout << "Total keypoints found in image 2: " << vkp2.size() << endl;
-    cout << "Total matches found:              " << matches.size() << endl;
-    cout << "Total inliers found:              " << inliers1.size() << endl;
+    // Print the results
+    cout << "T P = true positives  = good matches that were found by GMS" << endl;
+    cout << "F P = false positives = bad  matches that were found and mistaken for good matches by GMS" << endl;
+    cout << "F N = false negatives = good matches that were not found by GMS" << endl;
+
+    cout << "Total keypoints found in image 1: " << GMSkptsLeft.size() << endl;
+    cout << "Total keypoints found in image 2: " << GMSkptsRight.size() << endl;
+    cout << "Total matches found (T P + F P):  " << matches.size() << endl;
+    cout << "Total inliers found (T P):        " << inliers1.size() << endl;
     cout << "Precision = T P / (T P + F P):    " << 100 * inliers1.size() / matches.size() << "%" << endl;
-    cout << "Recall = T P / (T P + F N):       " << endl;
+    cout << "Recall = T P / (T P + F N):       " << 100 * inliers1.size() / trueInliers.size().width << "%" << endl;
 
 }
