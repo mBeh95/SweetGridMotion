@@ -15,9 +15,9 @@
 #include <opencv2/flann.hpp>
 #include <iostream>
 
-#include "gms_matcher.h"
+//#include "gms_matcher.h"
 //#include "gms_matcher_mb.h"
-//#include "gms_matcher_bp.h"
+#include "gms_matcher_borders.h"
 using namespace cv;
 using namespace xfeatures2d;
 using namespace cuda;
@@ -34,7 +34,7 @@ void runImagePair() {
 	//                          0         1          2                 3             4                5            6              7                8
 	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
 	Mat img1 = imread(photoNames[0]);
-	Mat img2 = imread(photoNames[5]);
+	Mat img2 = imread("02_T.jpg");
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
@@ -65,7 +65,7 @@ int main()
 
 void gmsMatch(Mat& img1, Mat& img2) {
 	vector<KeyPoint> kp1, kp2;
-	Mat d1, d2;
+	Mat d1, d2, output;
 	vector<DMatch> matches_all, matches_gms;
 
 	Ptr<ORB> orb = ORB::create(10000);
@@ -77,6 +77,18 @@ void gmsMatch(Mat& img1, Mat& img2) {
 
 	BFMatcher matcher(NORM_HAMMING);
 	matcher.match(d1, d2, matches_all);
+
+	drawMatches(img1, kp1, img2, kp2, matches_all, output);
+
+	// Create a window that will show the output result from the feature detector and matching techinique
+	namedWindow("output", WINDOW_NORMAL);
+
+	// Scale down the window due to the large image
+	resizeWindow("output", output.cols, output.rows);
+
+	// Show window
+	imshow("output", output);
+	waitKey(0);
 
 
 	// GMS filter
@@ -101,6 +113,11 @@ void gmsMatch(Mat& img1, Mat& img2) {
 
 	// draw matching to a window
 	Mat show = drawInlier(img1, img2, kp1, kp2, matches_gms,2);
+	// Create a window that will show the output result from the feature detector and matching techinique
+	namedWindow("show", WINDOW_NORMAL);
+
+	// Scale down the window due to the large image
+	resizeWindow("show", show.cols, show.rows);
 	imshow("show", show);
 	waitKey(0);
 }
