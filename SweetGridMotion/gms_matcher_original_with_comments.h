@@ -724,10 +724,10 @@ int gms_matcher::run(int RotationType) {
 		// Mark inliers
 		for (size_t i = 0; i < mNumberMatches; i++)
 		{
-			// If there was a match between the cells
+			// If the grid index in the left grid is greater than 0
 			if (mvMatchPairs[i].first >= 0) {
 
-				// There should be an equal number of matches per cell pair (if the cells match)
+				// If the value in the cellPairs vector at the left index matches the right index 
 				if (mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
 				{
 					// By setting the inlier mask to false initially,

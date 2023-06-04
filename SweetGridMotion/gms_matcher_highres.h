@@ -1,5 +1,7 @@
 // Breanna Powell
 // Goal 2: Grid adjustment for larger image sizes
+// The changes to the algorithm are on lines 
+// 92-95; 246-269;
 
 // This is based on 
 // GMS: Grid - based Motion Statistics for Fast, Ultra - robust Feature Correspondence.
@@ -87,7 +89,6 @@ public:
 		mNumberMatches = vDMatches.size();					//How many matches were found?
 		convertMatches(vDMatches, initialMatches);			//Fill initialMatches with pairs of points
 
-
 		// +++++++++++++++++++++++++++++++++ DYNAMIC GRID SIZING +++++++++++++++++++++++++++++++++//
 		// Grid size initialization
 		// Note that mGridSizeLeft has a width and a height
@@ -112,44 +113,43 @@ private:
 
 	//+++++++++++++++++++++++++ INITIALIZED BY THE CONSTRUCTOR ++++++++++++++++++++++++++++//
 
-	// Normalized Points - filled during the normalizePoints function
+	// Normalized Points - filled during the NormalizePoints function
 	vector<Point2f> normalizedPoints1, normalizedPoints2;
 
-	// Matches - filled with pairs of points during the convertMatches function
+	// Matches - filled with pairs of points during the ConvertMatches function
 	vector<pair<int, int> > initialMatches;
 
 	// The original number of matches found between two images - initialized from the size of vDMatches 
 	size_t mNumberMatches;
 
-	// Grid Size - 20 by 20
+	// Grid Size for the 1st image - 20 by 20
 	// Note: left is the first image; right is the second image
 	// mGridSizeLeft is set in the constructor with a fixed width and height -- 20 by 20 by default
-	// mGridSizeRight is set at runtime during the setScale function - varies by scale
-	Size mGridSizeLeft, mGridSizeRight;
+	Size mGridSizeLeft;
 
-	// How many cells total are in the left image's grid? -- initialized by constructor
+	// How many cells total are in the left image's grid? Fixed number that does not change
 	int totalNumberOfCellsLeft;
 
-	// How many cells total are in the right image's grid? -- initialized at runtime
-	int totalNumberOfCellsRight;
-
-	// All possible neighbors for all possible cells in each grid (left and right grid / image)
+	// All possible neighbors for all possible cells in each grid (left grid / image)
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
-	Mat mGridNeighborRight; //Initialized at runtime in the SetScale function from GetInlierMask - depends on scale
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 
-	// Every match between two points has a corresponding cell-pair too
-	// This is initialized in the assignMatchPairs function
-	// first  : grid_idx_left - mvMatchPairs[i].first = LEFT
-	// second : grid_idx_right - mvMatchPairs[i].second = RIGHT
-	// Size   : the total number of matches found initially
-	vector<pair<int, int> > mvMatchPairs;
+	// Grid Size for the 2nd image
+	// Note: left is the first image; right is the second image
+	// mGridSizeRight is set at runtime during the setScale function - varies by scale
+	Size mGridSizeRight;
+
+	// How many cells total are in the right image's grid? Changes depending on scale.
+	int totalNumberOfCellsRight;
+
+	// All possible neighbors for all possible cells in each grid (right grid / image)
+	Mat mGridNeighborRight; //Initialized at runtime in the SetScale function from GetInlierMask - depends on scale
 
 	// x	  : left grid idx
 	// y      : right grid idx
 	// value  : how many matches from idx_left to idx_right
-	// Note   : incremented in the assignMatchPairs function
+	// Note   : incremented in the AssignMatchPairs function
 	Mat mMotionStatistics;
 
 	// The points found per grid cell in the LEFT image -- incremented in the AssignMatchPairs function
@@ -163,10 +163,16 @@ private:
 	// Size   : the total number of cells in the grid
 	vector<int> mCellPairs;
 
+	// Every match between two points has a corresponding cell-pair too
+	// This is initialized in the AssignMatchPairs function
+	// first  : grid_idx_left - mvMatchPairs[i].first = LEFT
+	// second : grid_idx_right - mvMatchPairs[i].second = RIGHT
+	// Size   : the total number of matches found initially
+	vector<pair<int, int> > mvMatchPairs;
+
 	// Inlier Mask for output
 	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
-
 
 public:
 
@@ -732,10 +738,10 @@ int gms_matcher::run(int rotationType) {
 		// Mark inliers
 		for (size_t i = 0; i < mNumberMatches; i++)
 		{
-			// If there was a match between the cells
+			// If the grid index in the left grid is greater than 0
 			if (mvMatchPairs[i].first >= 0) {
 
-				// There should be an equal number of matches per cell pair (if the cells match)
+				// If the value in the cellPairs vector at the left index matches the right index 
 				if (mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
 				{
 					// By setting the inlier mask to false initially,
