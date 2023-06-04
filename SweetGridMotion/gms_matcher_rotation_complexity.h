@@ -486,6 +486,7 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 	if (!WithScale)
 	{
 		SetScale(0);						//SetScale(0) indicates NO scaling
+
 		// Initialize all matches to false at first
 		mvbInlierMask.assign(mNumberMatches, false);
 

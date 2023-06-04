@@ -15,10 +15,10 @@
 #include <opencv2/flann.hpp>
 #include <iostream>
 
-//#include "gms_matcher.h"
+#include "gms_matcher.h"
 //#include "gms_matcher_mb.h"
 //#include "gms_matcher_borders.h"
-#include "gms_matcher_rotation_complexity.h"
+//#include "gms_matcher_rotation_complexity.h"
 using namespace cv;
 using namespace xfeatures2d;
 using namespace cuda;
@@ -28,6 +28,50 @@ using namespace std;
 
 void gmsMatch(Mat& img1, Mat& img2);
 Mat drawInlier(Mat& src1, Mat& src2, vector<KeyPoint>& kpt1, vector<KeyPoint>& kpt2, vector<DMatch>& inlier, int type);
+
+// siftKeyDes
+// Summary: Use SIFT feature detection to get the decriptors and keypoints for the images
+// precondition: The images should not be empty, while the decriptors and keypoint parametes will be.
+// postconditions: The descriptor and keypoint parameters will now store the values given by SIFT
+void siftKeyDes(Mat* descriptOne, Mat* descriptTwo,
+	const Mat imgOne, const Mat imgTwo,
+	vector<KeyPoint>* keyOne, vector<KeyPoint>* keyTwo, vector<DMatch>* matches, int kpNum)
+{
+	//Create the SIFT detector
+	Ptr<SIFT> detector = SIFT::create(kpNum);
+
+	//Get the keypoints and descriptors from both images
+	detector->detectAndCompute(imgOne, Mat(), *keyOne, *descriptOne);
+	detector->detectAndCompute(imgTwo, Mat(), *keyTwo, *descriptTwo);
+
+	BFMatcher matcher;
+	matcher.match(*descriptOne, *descriptTwo, *matches);
+}
+
+
+// orbKeyDes
+// Summary: Use ORB feature detection to get the decriptors and keypoints for the images
+// precondition: The images should not be empty, while the decriptors and keypoint parametes will be.
+// postconditions: The descriptor and keypoint parameters will now store the values given by ORB
+//		
+
+void orbKeyDes(Mat* descriptOne, Mat* descriptTwo,
+	const Mat imgOne, const Mat imgTwo,
+	vector<KeyPoint>* keyOne, vector<KeyPoint>* keyTwo, vector<DMatch>* matches, int kpNum)
+{
+	//Create the ORB detector
+	Ptr<ORB> detector = ORB::create(kpNum);
+	detector->setFastThreshold(0);
+
+	//Get the keypoints and descriptors from both images
+	detector->detectAndCompute(imgOne, Mat(), *keyOne, *descriptOne);
+	detector->detectAndCompute(imgTwo, Mat(), *keyTwo, *descriptTwo);
+
+	BFMatcher matcher(NORM_HAMMING);
+	matcher.match(*descriptOne, *descriptTwo, *matches);
+
+
+}
 
 void runImagePair() {
 	//Both images are retrieved.
@@ -69,15 +113,13 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	Mat d1, d2, output;
 	vector<DMatch> matches_all, matches_gms;
 
-	Ptr<ORB> orb = ORB::create(10000);
-	orb->setFastThreshold(0);
+	int kpTotal = 10000;
 
-	orb->detectAndCompute(img1, Mat(), kp1, d1);
-	orb->detectAndCompute(img2, Mat(), kp2, d2);
+	siftKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
+
+	//orbKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
 
 
-	BFMatcher matcher(NORM_HAMMING);
-	matcher.match(d1, d2, matches_all);
 
 	drawMatches(img1, kp1, img2, kp2, matches_all, output);
 
@@ -100,7 +142,7 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
 
 	//get the number of inliers
-	int num_inliers = gms.GetInlierMask(vbInliers, false, true);
+	int num_inliers = gms.GetInlierMask(vbInliers, false, false);
 	cout << "Get total " << num_inliers << " matches." << endl;
 
 	// collect matches
