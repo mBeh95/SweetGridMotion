@@ -33,6 +33,9 @@
     <ClInclude Include="gms_matcher_highres.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gms_matcher_rotation_complexity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
