@@ -694,7 +694,7 @@ void gms_matcher::verifyCellPairs(int rotationType) {
 			//++++++++++++++++++++++++++ BORDER CONDITIONS ++++++++++++++++++++++++++++++++++//
 			// Increase the score for a border cell
 			if (borderCellsLeft[ll] || borderCellsRight[rr]) {
-				int borderThresh = totalNumberOfCellsLeft / mGridSizeLeft.width;
+				int borderThresh = 5;
 				score += borderThresh;
 			}
 
