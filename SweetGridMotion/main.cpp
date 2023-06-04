@@ -17,7 +17,8 @@
 
 //#include "gms_matcher.h"
 //#include "gms_matcher_mb.h"
-#include "gms_matcher_borders.h"
+//#include "gms_matcher_borders.h"
+#include "gms_matcher_rotation_complexity.h"
 using namespace cv;
 using namespace xfeatures2d;
 using namespace cuda;
@@ -34,7 +35,7 @@ void runImagePair() {
 	//                          0         1          2                 3             4                5            6              7                8
 	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
 	Mat img1 = imread(photoNames[0]);
-	Mat img2 = imread("02_T.jpg");
+	Mat img2 = imread(photoNames[1]);
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
@@ -99,7 +100,7 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
 
 	//get the number of inliers
-	int num_inliers = gms.GetInlierMask(vbInliers, true, true);
+	int num_inliers = gms.GetInlierMask(vbInliers, false, true);
 	cout << "Get total " << num_inliers << " matches." << endl;
 
 	// collect matches

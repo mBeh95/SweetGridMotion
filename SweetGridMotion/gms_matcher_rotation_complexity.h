@@ -153,6 +153,11 @@ private:
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
 	Mat mGridNeighborRight; //Initialized at runtime in the SetScale function from GetInlierMask - depends on scale
 
+
+	bool withRotationCheck;
+	int bestRotation;
+	int bestGrid;
+
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 	
 	// x	  : left grid idx
@@ -476,108 +481,55 @@ private:
 int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bool WithRotation) {
 
 	int max_inlier = 0;
+	withRotationCheck = WithRotation;
 
-	if (!WithScale && !WithRotation)
+	if (!WithScale)
 	{
 		SetScale(0);						//SetScale(0) indicates NO scaling
-		max_inlier = run(1);				//run(1) indicates no rotation
-		inliersToReturn = mvbInlierMask;
+		// Initialize all matches to false at first
+		mvbInlierMask.assign(mNumberMatches, false);
+
+		// Initialize mMotionStatistics to 0s for 400 by 400 cells
+		mMotionStatistics = Mat::zeros(totalNumberOfCellsLeft, totalNumberOfCellsRight, CV_32SC1);
+
+		// Initialize mvMatchPairs to 0s for each set of matches
+		mvMatchPairs.assign(mNumberMatches, pair<int, int>(0, 0));
+
+		for (int gridType = 1; gridType <= 4; gridType++)
+		{
+			max_inlier = run(gridType);
+			inliersToReturn = mvbInlierMask;
+		}
 		return max_inlier;
 	}
-
-
-	if (WithRotation && WithScale)
+	if (WithScale)
 	{
-
 		//REPEAT FOR ALL 5 SCALES
 		for (int Scale = 0; Scale < 5; Scale++)
 		{
 			SetScale(Scale);
 
-			//REPEAT FOR ALL 8 ROTATION TYPES
-			for (int RotationType = 1; RotationType <= 8; RotationType++)
+			// Initialize all matches to false at first
+			mvbInlierMask.assign(mNumberMatches, false);
+
+			// Initialize mMotionStatistics to 0s for 400 by 400 cells
+			mMotionStatistics = Mat::zeros(totalNumberOfCellsLeft, totalNumberOfCellsRight, CV_32SC1);
+
+			// Initialize mvMatchPairs to 0s for each set of matches
+			mvMatchPairs.assign(mNumberMatches, pair<int, int>(0, 0));
+
+			//REPEAT FOR ALL 4 GRID TYPES
+			for (int gridType = 1; gridType <= 4; gridType++)
 			{
-				int num_inlier = run(RotationType);
+				int num_inlier = run(gridType);
 
 				if (num_inlier > max_inlier)
 				{
 					//Set the max_inlier
 					inliersToReturn = mvbInlierMask;
 					max_inlier = num_inlier;
-					orientation = RotationType;
 				}
 			}
-		}
-		return max_inlier;
-	}
-
-	//if (WithRotation && WithScale)
-	//{
-
-	//	//REPEAT FOR ALL 5 SCALES
-	//	for (int Scale = 0; Scale < 5; Scale++)
-	//	{
-	//		SetScale(Scale);
-
-	//		// ++++++++++++++++++ REDUCING ROTATION COMPLEXITY ++++++++++++++//
-	//		for (int RotationType = 1; RotationType <= 4; RotationType++)
-	//		{
-	//			int num_inlierCW = run(RotationType);
-	//			vector<bool>& inliersCW = mvbInlierMask;
-	//			
-	//			int num_inlierCC = run(8 - RotationType -1);
-	//			vector<bool>& inliersCC = mvbInlierMask;
-
-	//			if (num_inlierCW > num_inlierCC && num_inlierCW > max_inlier) {
-	//				//Set the max_inlier
-	//				inliersToReturn = mvbInlierMask;
-	//				max_inlier = num_inlierCW;
-	//				orientation = RotationType;
-	//			}
-	//			else if (num_inlierCC > num_inlierCW && num_inlierCC > max_inlier) {
-
-	//				//Set the max_inlier
-	//				inliersToReturn = mvbInlierMask;
-	//				max_inlier = num_inlierCC;
-	//				orientation = RotationType;
-	//			}
-	//		}
-	//	}
-	//	return max_inlier;
-	//}
-
-	if (WithRotation && !WithScale)
-	{
-		SetScale(0);				//SetScale(0) indicates NO scaling
-
-		for (int RotationType = 1; RotationType <= 8; RotationType++)
-		{
-			int num_inlier = run(RotationType);
-
-			if (num_inlier > max_inlier)
-			{
-				inliersToReturn = mvbInlierMask;
-				max_inlier = num_inlier;
-				orientation = RotationType;
-			}
-		}
-		return max_inlier;
-	}
-
-	if (!WithRotation && WithScale)
-	{
-		for (int Scale = 0; Scale < 5; Scale++)
-		{
-			SetScale(Scale);
-
-			int num_inlier = run(1); //run(1) indicates no rotation
-
-			if (num_inlier > max_inlier)
-			{
-				inliersToReturn = mvbInlierMask;
-				max_inlier = num_inlier;
-			}
-
 		}
 		return max_inlier;
 	}
@@ -731,20 +683,12 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 *            This is needed for the VerifyCellPairs method.
 * @return    The number of inliers
 */
-int gms_matcher::run(int RotationType) {
+int gms_matcher::run(int GridType) {
 
-	// Initialize all matches to false at first
-	mvbInlierMask.assign(mNumberMatches, false);
-
-	// Initialize mMotionStatistics to 0s for 400 by 400 cells
-	mMotionStatistics = Mat::zeros(totalNumberOfCellsLeft, totalNumberOfCellsRight, CV_32SC1);
-
-	// Initialize mvMatchPairs to 0s for each set of matches
-	mvMatchPairs.assign(mNumberMatches, pair<int, int>(0, 0));
-
-	// Repeat for each of the 4 grid types -- original, shifted x, shifted y, shifted xy
-	for (int GridType = 1; GridType <= 4; GridType++)
+	
+	if (withRotationCheck == false)
 	{
+
 		// Set motion statistics vector to all 0s
 		mMotionStatistics.setTo(0);
 
@@ -758,7 +702,7 @@ int gms_matcher::run(int RotationType) {
 		AssignMatchPairs(GridType);
 
 		// Fill in the mCellPairs vector
-		VerifyCellPairs(RotationType);
+		VerifyCellPairs(1);
 
 		// Mark inliers
 		for (size_t i = 0; i < mNumberMatches; i++)
@@ -772,7 +716,46 @@ int gms_matcher::run(int RotationType) {
 					// By setting the inlier mask to false initially,
 					// only true matches will be found.
 					// Fill mvbInlierMask with true if the match was true
-					mvbInlierMask[i] = true; 
+					mvbInlierMask[i] = true;
+				}
+			}
+		}
+	}
+	else
+	{
+
+		for (int RotationType = 1; RotationType <= 8; RotationType++)
+		{
+
+			// Set motion statistics vector to all 0s
+			mMotionStatistics.setTo(0);
+
+			// Initialize mCellPairs with -1s for all the cells in the grid
+			mCellPairs.assign(totalNumberOfCellsLeft, -1);
+
+			// Initialize mNumberPointsInPerCellLeft with 0s for all the cells in the grid
+			mNumberPointsInPerCellLeft.assign(totalNumberOfCellsLeft, 0);
+
+			// Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors
+			AssignMatchPairs(GridType);
+
+			// Fill in the mCellPairs vector
+			VerifyCellPairs(RotationType);
+
+			// Mark inliers
+			for (size_t i = 0; i < mNumberMatches; i++)
+			{
+				// If there was a match between the cells
+				if (mvMatchPairs[i].first >= 0) {
+
+					// There should be an equal number of matches per cell pair (if the cells match)
+					if (mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
+					{
+						// By setting the inlier mask to false initially,
+						// only true matches will be found.
+						// Fill mvbInlierMask with true if the match was true
+						mvbInlierMask[i] = true;
+					}
 				}
 			}
 		}
