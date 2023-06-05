@@ -111,7 +111,8 @@ public:
 		vector<Point2f> np1,
 		vector<Point2f> np2,
 		vector<pair<int, int> > subGridMatches,
-		const Size gridSize = Size(4, 4)
+		const Size gridSize = Size(80, 80),
+		const int offset
 	)
 	{
 		normalizedPoints1 = np1;
@@ -135,6 +136,9 @@ public:
 
 		// Fill in the matrixes of the 16 by 9 cells with indexes to the neighbors per cell
 		initializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
+
+		// How much to offset the index for the subgrid.
+		subGridOffset = offset;
 
 	};
 
@@ -165,6 +169,9 @@ private:
 
 	// All possible neighbors for all possible cells in each grid (left grid / image)
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
+
+	// How much to offset the index for the subgrid.
+	int subGridOffset;
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 
@@ -309,6 +316,9 @@ private:
 	*/
 	int getGridIndexLeft(const Point2f& pt, int gridType) {
 		int x = 0, y = 0;
+		
+		if (totalNumberOfCellsLeft > 16)
+			subGridOffset = 0;
 
 		//NO SHIFTING
 		if (gridType == 1) {
@@ -351,7 +361,7 @@ private:
 		}
 
 		//Return the grid index of the point (in the LEFT image)
-		return x + y * mGridSizeLeft.width;
+		return x + y * mGridSizeLeft.width + subGridOffset;
 	}
 
 	/** Return the starting index for the right grid / image
@@ -802,14 +812,14 @@ void gms_matcher::runSubInliers() {
 	if (mGridSizeLeft.width > 4 && mGridSizeLeft.height > 4) {
 
 		// Get the grid index of the best cell
-		int bestCell = cellsOrderedByNumberOfMatches.top().second;
+		int bestCellIndex = cellsOrderedByNumberOfMatches.top().second;
 
 		// What matches were found in that one cell?
 		vector<pair<int, int> > cellMatches;
 		
 		// Fill cellMatches only with matches that are in that one cell
 		for (int i = 0; i < mvMatchPairs.size(); i++) {
-			if (mvMatchPairs[i].first == bestCell)
+			if (mvMatchPairs[i].first == bestCellIndex)
 				cellMatches.push_back(initialMatches[i]);
 		}
 
@@ -817,10 +827,21 @@ void gms_matcher::runSubInliers() {
 		// Size : how many matches were in that one cell?
 		std::vector<bool> subInliers;
 
+		// What dimensions should the sub-grid be?
 		Size subSize = Size(4, 4);
 
+		// When making a sub-grid for one cell, the larger grid needs to be made into an 80 by 80 grid
+		Size totalSize = Size(subSize.width * mGridSizeLeft.width, subSize.height * mGridSizeLeft.height);
+
+		// The offset will be the bestCellIndex multiplied by the dimensions of the sub-grid
+		int rows = (bestCellIndex / mGridSizeLeft.height) * subSize.height * subSize.width * mGridSizeLeft.width;
+		int cols = (bestCellIndex % mGridSizeLeft.height) * subSize.height * subSize.width;
+		
+		// The offset will tell where to begin with the grid indexing in the subgrid
+		int offset =  rows + cols;
+
 		// Make a subGrid
-		gms_matcher subGrid(normalizedPoints1, normalizedPoints2, cellMatches, subSize);
+		gms_matcher subGrid(normalizedPoints1, normalizedPoints2, cellMatches, totalSize, offset);
 		
 		// Get an inlier mask from the subgrid
 		subGrid.GetInlierMask(subInliers, withRotationCheck, withScalingCheck);
