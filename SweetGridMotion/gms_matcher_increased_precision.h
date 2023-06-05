@@ -82,7 +82,8 @@ public:
 	*            which is detected through brute force nearest neighbor matching.
 	*/
 	gms_matcher(const vector<KeyPoint>& vkp1, const Size size1,
-		const vector<KeyPoint>& vkp2, const Size size2, const vector<DMatch>& vDMatches)
+		const vector<KeyPoint>& vkp2, const Size size2, 
+		const vector<DMatch>& vDMatches)
 	{
 		// Input initialization (keypoints and matches)
 		normalizePoints(vkp1, size1, normalizedPoints1);	//Fills normalizedPoints1
@@ -105,6 +106,43 @@ public:
 		// Fill in the matrixes of the 400 by 9 cells with indexes to the neighbors per cell
 		initializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 	};
+
+	gms_matcher(
+		vector<Point2f> np1,
+		vector<Point2f> np2,
+		vector<pair<int, int> > subGridMatches,
+		const Size gridSize = Size(4, 4),
+		const int offset
+	)
+	{
+		normalizedPoints1 = np1;
+		normalizedPoints2 = np2;
+
+		initialMatches = subGridMatches;
+
+		// Input initialization (keypoints and matches)
+		mNumberMatches = subGridMatches.size();
+
+		// Grid size initialization
+		// Note that mGridSizeLeft has a width and a height
+		mGridSizeLeft = gridSize; // The default grid size for the first image is 20 by 20
+
+		// Total number of cells in the grid (4 * 4)
+		totalNumberOfCellsLeft = mGridSizeLeft.width * mGridSizeLeft.height;
+
+		// The mGridNeighborLeft matrix is size 16 by 9 by default
+		// The zeros function takes in the number of rows, columns, and data type
+		// and fills the matrix with 0s.
+		mGridNeighborLeft = Mat::zeros(totalNumberOfCellsLeft, 9, CV_32SC1);
+
+		// Fill in the matrixes of the 16 by 9 cells with indexes to the neighbors per cell
+		initializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
+
+		// How much to offset the index for the subgrid.
+		subGridOffset = offset;
+
+	};
+
 
 	//Destructor
 	~gms_matcher() {};
@@ -132,6 +170,9 @@ private:
 
 	// All possible neighbors for all possible cells in each grid (left grid / image)
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
+
+	// How much to offset the index for the subgrid.
+	int subGridOffset;
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 
@@ -314,7 +355,7 @@ private:
 			}
 		}
 
-		//Return the index of the leftmost point of the grid
+		//Return the grid index of the point (in the LEFT image)
 		return x + y * mGridSizeLeft.width;
 	}
 
@@ -731,6 +772,25 @@ void gms_matcher::findMaxCell() {
 }
 
 void gms_matcher::runSubInliers() {
+
+	// The subgrid needs to have a smaller image size
+	subImageSize1 = 1;
+
+
+	if (mGridSizeLeft > Size(4, 4)) {
+
+	}
+
+	// GMS filter
+	//A vector used to store correspondences
+	std::vector<bool> subInliers;
+
+	//Call the gms function
+	gms_matcher gms();
+
+	//get the number of inliers
+	int num_inliers = gms.GetInlierMask(subInliers, false, true);
+
 
 }
 
