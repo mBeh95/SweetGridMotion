@@ -15,10 +15,11 @@
 #include <opencv2/flann.hpp>
 #include <iostream>
 
-#include "gms_matcher.h"
+//#include "gms_matcher.h"
 //#include "gms_matcher_mb.h"
 //#include "gms_matcher_borders.h"
-//#include "gms_matcher_rotation_complexity.h"
+#include "gms_matcher_rotation_complexity.h"
+
 using namespace cv;
 using namespace xfeatures2d;
 using namespace cuda;
@@ -69,8 +70,6 @@ void orbKeyDes(Mat* descriptOne, Mat* descriptTwo,
 
 	BFMatcher matcher(NORM_HAMMING);
 	matcher.match(*descriptOne, *descriptTwo, *matches);
-
-
 }
 
 void runImagePair() {
@@ -79,7 +78,7 @@ void runImagePair() {
 	//                          0         1          2                 3             4                5            6              7                8
 	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
 	Mat img1 = imread(photoNames[0]);
-	Mat img2 = imread(photoNames[1]);
+	Mat img2 = imread(photoNames[7]);
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
@@ -115,11 +114,9 @@ void gmsMatch(Mat& img1, Mat& img2) {
 
 	int kpTotal = 10000;
 
-	siftKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
+	//siftKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
 
-	//orbKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
-
-
+	orbKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
 
 	drawMatches(img1, kp1, img2, kp2, matches_all, output);
 
@@ -142,7 +139,7 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
 
 	//get the number of inliers
-	int num_inliers = gms.GetInlierMask(vbInliers, false, false);
+	int num_inliers = gms.GetInlierMask(vbInliers, false, true);
 	cout << "Get total " << num_inliers << " matches." << endl;
 
 	// collect matches

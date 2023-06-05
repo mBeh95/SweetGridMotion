@@ -118,7 +118,8 @@ public:
 		// Fill in the matrixes of the 400 by 9 cells with indexes to the neighbors per cell
 		InitializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 
-		orientation = -1;
+		maximumInlier = -1;
+
 	};
 
 	//Destructor
@@ -153,11 +154,6 @@ private:
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
 	Mat mGridNeighborRight; //Initialized at runtime in the SetScale function from GetInlierMask - depends on scale
 
-
-	bool withRotationCheck;
-	int bestRotation;
-	int bestGrid;
-
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 	
 	// x	  : left grid idx
@@ -191,7 +187,14 @@ private:
 	// Store the best orientation, to early stop when going through other grid types.
 	// if -1, then not set yet
 	// if greater than
-	int orientation;
+
+	bool withRotationCheck;
+	int bestRotation;
+	int bestGrid;
+	int maximumInlier;
+	bool twice;
+
+
 
 public:
 
@@ -316,6 +319,7 @@ private:
 
 		//Return the index of the leftmost point of the grid
 		return x + y * mGridSizeLeft.width;
+
 	}
 
 	/** Return the starting index for the right grid / image
@@ -454,11 +458,11 @@ private:
 	*            As the algorithm goes through each iteration,
 	*            more inliers are found and added.
 	*            This calls the AssignMatchPairs and VerifyCellPairs functions.
-	* @param     RotationType is one of 8 rotation patterns.
+	* @param     gridType is one of 4 grid patterns.
 	*            This is needed for the VerifyCellPairs method.
 	* @return    The number of inliers
 	*/
-	int run(int RotationType);
+	int run(int gridType);
 
 };
 
@@ -498,9 +502,19 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 
 		for (int gridType = 1; gridType <= 4; gridType++)
 		{
-			max_inlier = run(gridType);
-			inliersToReturn = mvbInlierMask;
+			int num_inlier = run(gridType);
+
+			if (num_inlier > max_inlier)
+			{
+				//Set the max_inlier
+				inliersToReturn = mvbInlierMask;
+				max_inlier = num_inlier;
+				bestGrid = gridType;
+			}
+
 		}
+		cout << endl << "BEST GRID IS:   " << bestGrid << endl;
+		cout << endl << "BEST ROTATION IS:   " << bestRotation << endl;
 		return max_inlier;
 	}
 	if (WithScale)
@@ -529,9 +543,12 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool WithScale, bo
 					//Set the max_inlier
 					inliersToReturn = mvbInlierMask;
 					max_inlier = num_inlier;
+					bestGrid = gridType;
 				}
 			}
 		}
+		cout << endl << "BEST GRID IS:   " << bestGrid << endl;
+		cout << endl << "BEST ROTATION IS:   " << bestRotation << endl;
 		return max_inlier;
 	}
 
@@ -686,7 +703,8 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 */
 int gms_matcher::run(int GridType) {
 
-	
+	int num_inlier = 0;
+
 	if (withRotationCheck == false)
 	{
 
@@ -721,13 +739,51 @@ int gms_matcher::run(int GridType) {
 				}
 			}
 		}
+		// Return the total number of inliers found
+		num_inlier = sum(mvbInlierMask)[0];
+		return num_inlier;
+	}
+	else if (bestRotation > 0 && GridType > 2)
+	{
+		// Set motion statistics vector to all 0s
+		mMotionStatistics.setTo(0);
+
+		// Initialize mCellPairs with -1s for all the cells in the grid
+		mCellPairs.assign(totalNumberOfCellsLeft, -1);
+
+		// Initialize mNumberPointsInPerCellLeft with 0s for all the cells in the grid
+		mNumberPointsInPerCellLeft.assign(totalNumberOfCellsLeft, 0);
+
+		// Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors
+		AssignMatchPairs(GridType);
+
+		// Fill in the mCellPairs vector
+		VerifyCellPairs(bestRotation);
+
+		// Mark inliers
+		for (size_t i = 0; i < mNumberMatches; i++)
+		{
+			// If there was a match between the cells
+			if (mvMatchPairs[i].first >= 0) {
+
+				// There should be an equal number of matches per cell pair (if the cells match)
+				if (mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
+				{
+					// By setting the inlier mask to false initially,
+					// only true matches will be found.
+					// Fill mvbInlierMask with true if the match was true
+					mvbInlierMask[i] = true;
+				}
+			}
+		}
+		// Return the total number of inliers found
+		num_inlier = sum(mvbInlierMask)[0];
+		return num_inlier;
 	}
 	else
 	{
-
 		for (int RotationType = 1; RotationType <= 8; RotationType++)
 		{
-
 			// Set motion statistics vector to all 0s
 			mMotionStatistics.setTo(0);
 
@@ -759,10 +815,17 @@ int gms_matcher::run(int GridType) {
 					}
 				}
 			}
-		}
-	}
 
-	// Return the total number of inliers found
-	int num_inlier = sum(mvbInlierMask)[0];
-	return num_inlier;
+			// Return the total number of inliers found
+			num_inlier = sum(mvbInlierMask)[0];
+			if (num_inlier > maximumInlier)
+			{
+				maximumInlier = num_inlier;
+				bestRotation = RotationType;
+			}
+
+		}
+
+		return num_inlier;
+	}
 }
