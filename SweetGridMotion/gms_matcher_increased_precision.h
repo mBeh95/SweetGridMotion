@@ -111,13 +111,11 @@ public:
 		vector<Point2f> np1,
 		vector<Point2f> np2,
 		vector<pair<int, int> > subGridMatches,
-		const Size gridSize = Size(4, 4),
-		const int offset
+		const Size gridSize = Size(4, 4)
 	)
 	{
 		normalizedPoints1 = np1;
 		normalizedPoints2 = np2;
-
 		initialMatches = subGridMatches;
 
 		// Input initialization (keypoints and matches)
@@ -137,9 +135,6 @@ public:
 
 		// Fill in the matrixes of the 16 by 9 cells with indexes to the neighbors per cell
 		initializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
-
-		// How much to offset the index for the subgrid.
-		subGridOffset = offset;
 
 	};
 
@@ -170,9 +165,6 @@ private:
 
 	// All possible neighbors for all possible cells in each grid (left grid / image)
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
-
-	// How much to offset the index for the subgrid.
-	int subGridOffset;
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 
@@ -233,6 +225,9 @@ private:
 	// Subinlier mask / subgrid for increased precision
 	// Size   : the total number of matches found in the cell with the most matches
 	vector<bool> subInlierMask;
+
+	// Was rotation turned on? Was scaling turned on?
+	bool withRotationCheck, withScalingCheck;
 
 public:
 
@@ -496,7 +491,13 @@ private:
 	*/
 	void findMaxCell();
 
-
+	/** Run the subgrid function
+	* @pre       Found the cell with the max number of inliers.
+	*
+	* @post      Create a subgrid.
+	*            Verify the subgrid.
+	*            Correct any false positives that the larger grid found.
+	*/
 	void runSubInliers();
 
 	/** RUN GMS
@@ -534,14 +535,18 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 
 	max_inlier = 0;
 	bestGridType = 0;
+	withRotationCheck = withRotation;
+	withScalingCheck = withScale;
 
 	if (!withScale && !withRotation)
 	{
 		setScale(0);						//setScale(0) indicates NO scaling
 		max_inlier = run(1);				//run(1) indicates no rotation
+
+		// Run everything for the subgrid, to increase precision
+		findMaxCell();
+		runSubInliers();
 		inliersToReturn = mvbInlierMask;
-		
-		// TODO: ADD THE MAX FUNCTION HERE
 
 		return max_inlier;
 	}
@@ -568,7 +573,10 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 			}
 		}
 
-		// TODO: ADD THE MAX FUNCTION HERE
+		// Run everything for the subgrid, to increase precision
+		findMaxCell();
+		runSubInliers();
+		inliersToReturn = mvbInlierMask;
 
 		return max_inlier;
 	}
@@ -588,7 +596,10 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 			}
 		}
 
-		// TODO: ADD THE MAX FUNCTION HERE
+		// Run everything for the subgrid, to increase precision
+		findMaxCell();
+		runSubInliers();
+		inliersToReturn = mvbInlierMask;
 
 		return max_inlier;
 	}
@@ -610,12 +621,19 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 
 		}
 
-		// TODO: ADD THE MAX FUNCTION HERE
+		// Run everything for the subgrid, to increase precision
+		findMaxCell();
+		runSubInliers();
+		inliersToReturn = mvbInlierMask;
 
 		return max_inlier;
 	}
 
-	// TODO: ADD THE MAX FUNCTION HERE
+	// Run everything for the subgrid, to increase precision
+	findMaxCell();
+	runSubInliers();
+	inliersToReturn = mvbInlierMask;
+
 	return max_inlier;
 }
 
@@ -771,27 +789,59 @@ void gms_matcher::findMaxCell() {
 			cellsOrderedByNumberOfMatches.push(make_pair(mNumberPointsInPerCellLeft[i], i));
 }
 
+
+/** Run the subgrid function
+* @pre       Found the cell with the max number of inliers.
+*
+* @post      Create a subgrid.
+*            Verify the subgrid.
+*            Correct any false positives that the larger grid found.
+*/
 void gms_matcher::runSubInliers() {
 
-	// The subgrid needs to have a smaller image size
-	subImageSize1 = 1;
+	if (mGridSizeLeft.width > 4 && mGridSizeLeft.height > 4) {
 
+		// Get the grid index of the best cell
+		int bestCell = cellsOrderedByNumberOfMatches.top().second;
 
-	if (mGridSizeLeft > Size(4, 4)) {
+		// What matches were found in that one cell?
+		vector<pair<int, int> > cellMatches;
+		
+		// Fill cellMatches only with matches that are in that one cell
+		for (int i = 0; i < mvMatchPairs.size(); i++) {
+			if (mvMatchPairs[i].first == bestCell)
+				cellMatches.push_back(initialMatches[i]);
+		}
 
+		// A vector used to store correspondences
+		// Size : how many matches were in that one cell?
+		std::vector<bool> subInliers;
+
+		Size subSize = Size(4, 4);
+
+		// Make a subGrid
+		gms_matcher subGrid(normalizedPoints1, normalizedPoints2, cellMatches, subSize);
+		
+		// Get an inlier mask from the subgrid
+		subGrid.GetInlierMask(subInliers, withRotationCheck, withScalingCheck);
+
+		// If the subGrid deemed the match false, correct this on the inlier mask
+		for (int i = 0; i < mvbInlierMask.size(); i++) {
+
+			// If the match was marked as TRUE by the larger grid, double check it
+			if (mvbInlierMask[i]) {
+
+				// Get the subgrid index for that point
+				int x = floor(initialMatches[i].first * subSize.width);
+				int y = floor(initialMatches[i].second * subSize.height);
+				int subCellIndex = x + y * subSize.width;
+
+				// Look at that subgrid cell; if it was false, change that in the larger inlier mask
+				if (!subInliers[subCellIndex])
+					mvbInlierMask[i] = false;
+			}
+		}
 	}
-
-	// GMS filter
-	//A vector used to store correspondences
-	std::vector<bool> subInliers;
-
-	//Call the gms function
-	gms_matcher gms();
-
-	//get the number of inliers
-	int num_inliers = gms.GetInlierMask(subInliers, false, true);
-
-
 }
 
 /** RUN GMS
