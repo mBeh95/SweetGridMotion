@@ -33,7 +33,7 @@
     <ClInclude Include="gms_matcher_rotation_complexity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gms_matcher_with_heap.h">
+    <ClInclude Include="gms_matcher_increased_precision.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
