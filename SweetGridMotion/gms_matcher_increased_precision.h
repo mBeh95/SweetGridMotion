@@ -1,5 +1,5 @@
 // Breanna Powell
-// Goal 3: 
+// Goal 3: Increase the Precision using a subsection.
 // The changes to the algorithm are on lines 
 // 177-182; 
 // 
@@ -161,7 +161,7 @@ private:
 	// Index  : grid_idx_left - mCellPairs[i] is the grid index from the LEFT image
 	// Value  : grid_idx_right - mCellPairs[i] = j is the grid index from the RIGHT image (or -1 if no matches)
 	// Size   : the total number of cells in the grid
-	vector<int> mCellPairs;
+	vector<int> mCellPairs, bestCellPairs;
 
 	// Every match between two points has a corresponding cell-pair too
 	// This is initialized in the assignMatchPairs function
@@ -180,11 +180,18 @@ private:
 	// Size   : the total number of cells in the left image
 	priority_queue<pair<int, int> > cellsOrderedByNumberOfMatches;
 
-	// The gridType and rotationType that had the highest number of matches
-	int bestGridType, bestRotationType;
-
-	// What is the maximum number inliers?
+	// What is the maximum number inliers that were found so far?
 	int max_inlier;
+
+	// Knowing how many inliers were found will help distinguish which grid type is best.
+	int maxInliersPerGridType;
+
+	// The gridType that had the highest number of matches
+	int bestGridType;
+
+	// Subinlier mask / subgrid for increased precision
+	// Size   : the total number of matches found in the cell with the most matches
+	vector<bool> subInlierMask;
 
 public:
 
@@ -445,9 +452,11 @@ private:
 	*            verifyCellPairs was called
 	* 
 	* @post      Fill the cellsOrderedByNumberOfMatches priorityqueue
-	* @param     gridType is one of 4 possible grid types
 	*/
-	void findMaxCell(int gridType);
+	void findMaxCell();
+
+
+	void runSubInliers();
 
 	/** RUN GMS
 	* @pre       run is called from the public GetInlierMask function.
@@ -483,7 +492,6 @@ private:
 int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bool withRotation) {
 
 	max_inlier = 0;
-	bestRotationType = 0;
 	bestGridType = 0;
 
 	if (!withScale && !withRotation)
@@ -491,6 +499,9 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 		setScale(0);						//setScale(0) indicates NO scaling
 		max_inlier = run(1);				//run(1) indicates no rotation
 		inliersToReturn = mvbInlierMask;
+		
+		// TODO: ADD THE MAX FUNCTION HERE
+
 		return max_inlier;
 	}
 
@@ -512,10 +523,12 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 					//Set the max_inlier
 					inliersToReturn = mvbInlierMask;
 					max_inlier = num_inlier;
-					bestRotationType = rotationType;
 				}
 			}
 		}
+
+		// TODO: ADD THE MAX FUNCTION HERE
+
 		return max_inlier;
 	}
 
@@ -531,19 +544,22 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 			{
 				inliersToReturn = mvbInlierMask;
 				max_inlier = num_inlier;
-				bestRotationType = rotationType;
 			}
 		}
+
+		// TODO: ADD THE MAX FUNCTION HERE
+
 		return max_inlier;
 	}
 
 	if (!withRotation && withScale)
 	{
+
 		for (int Scale = 0; Scale < 5; Scale++)
 		{
 			setScale(Scale);
 
-			int num_inlier = run(1); //run(1) indicates no rotation
+			int num_inlier = run(1); // no rotation
 
 			if (num_inlier > max_inlier)
 			{
@@ -552,9 +568,13 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 			}
 
 		}
+
+		// TODO: ADD THE MAX FUNCTION HERE
+
 		return max_inlier;
 	}
 
+	// TODO: ADD THE MAX FUNCTION HERE
 	return max_inlier;
 }
 
@@ -607,7 +627,6 @@ void gms_matcher::assignMatchPairs(int gridType) {
 		// Increment the number of matched points per cell for the left image
 		mNumberPointsInPerCellLeft[lgidx]++;
 	}
-
 }
 
 /** Verify Cell Pairs
@@ -698,21 +717,21 @@ void gms_matcher::verifyCellPairs(int rotationType) {
 *            verifyCellPairs was called.
 *
 * @post      Fill the cellsOrderedByNumberOfMatches priorityqueue
-* @param     gridType is one of 4 possible grid types
 */
-void gms_matcher::findMaxCell(int gridType) {
-	if (gridType == 1)
+void gms_matcher::findMaxCell() {
 
-		// For all the cells in the left grid
-		for (int i = 0; i < totalNumberOfCellsLeft; i++)
+	// For all the cells in the left grid
+	for (int i = 0; i < totalNumberOfCellsLeft; i++)
 
-			// If there was a cell pair
-			if(mCellPairs[i] >= 0)
+		// If there was a cell pair
+		if(bestCellPairs[i] >= 0)
 
-				// Add the number of matches found in that cell and the index of the left image
-				cellsOrderedByNumberOfMatches.push(make_pair(mNumberPointsInPerCellLeft[i], i));
+			// Add the number of matches found in that cell and the index of the left image
+			cellsOrderedByNumberOfMatches.push(make_pair(mNumberPointsInPerCellLeft[i], i));
+}
 
-	
+void gms_matcher::runSubInliers() {
+
 }
 
 /** RUN GMS
@@ -737,6 +756,13 @@ int gms_matcher::run(int rotationType) {
 	// Initialize mvMatchPairs to 0s for each set of matches
 	mvMatchPairs.assign(mNumberMatches, pair<int, int>(0, 0));
 
+	// No inliers have been found yet
+	int num_inlier = 0;
+	maxInliersPerGridType = 0;
+
+	// Initialize bestCellPairs with -1s for all the cells in the grid
+	bestCellPairs.assign(totalNumberOfCellsLeft, -1);
+
 	// Repeat for each of the 4 grid types -- original, shifted x, shifted y, shifted xy
 	for (int gridType = 1; gridType <= 4; gridType++)
 	{
@@ -755,8 +781,6 @@ int gms_matcher::run(int rotationType) {
 		// Fill in the mCellPairs vector
 		verifyCellPairs(rotationType);
 
-		
-
 		// Mark inliers
 		for (size_t i = 0; i < mNumberMatches; i++)
 		{
@@ -764,16 +788,24 @@ int gms_matcher::run(int rotationType) {
 			if (mvMatchPairs[i].first >= 0) {
 
 				// If the value in the cellPairs vector at the left index matches the right index 
-				if (mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
-				{
+				if (mCellPairs
+					[mvMatchPairs[i].first] == mvMatchPairs[i].second)
+				{	
 					// By setting the inlier mask to false initially,
 					// only true matches will be found.
 					// Fill mvbInlierMask with true if the match was true
 					mvbInlierMask[i] = true;
-
-
 				}
 			}
+		}
+
+		// Find the best gridType and thus the best set of cell pairs
+		int inliersInThisGrid = sum(mNumberPointsInPerCellLeft)[0];
+
+		if (inliersInThisGrid > maxInliersPerGridType) {
+			bestGridType = gridType;
+			maxInliersPerGridType = inliersInThisGrid;
+			bestCellPairs = mCellPairs;
 		}
 	}
 

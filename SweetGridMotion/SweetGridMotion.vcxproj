@@ -147,7 +147,7 @@ opencv_features2d470d.lib;opencv_imgproc470d.lib;%(AdditionalDependencies)</Addi
     <ClInclude Include="gms_matcher_highres.h" />
     <ClInclude Include="gms_matcher_original_with_comments.h" />
     <ClInclude Include="gms_matcher_rotation_complexity.h" />
-    <ClInclude Include="gms_matcher_with_heap.h" />
+    <ClInclude Include="gms_matcher_increased_precision.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gms_commented_refactored.cpp" />
