@@ -14,6 +14,11 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/flann.hpp>
 #include <iostream>
+#include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <vector>
+
 
 //#include "gms_matcher.h"
 //#include "gms_matcher_mb.h"
@@ -24,6 +29,7 @@ using namespace cv;
 using namespace xfeatures2d;
 using namespace cuda;
 using namespace std;
+using namespace std::chrono;
 
 
 
@@ -78,7 +84,7 @@ void runImagePair() {
 	//                          0         1          2                 3             4                5            6              7                8
 	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
 	Mat img1 = imread(photoNames[0]);
-	Mat img2 = imread(photoNames[7]);
+	Mat img2 = imread(photoNames[6]);
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
@@ -135,11 +141,26 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	//A vector used to store correspondences
 	std::vector<bool> vbInliers;
 
+	// Get starting timepoint
+	auto start = high_resolution_clock::now();
+
 	//Call the gms function
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
 
 	//get the number of inliers
 	int num_inliers = gms.GetInlierMask(vbInliers, false, true);
+
+	// Get ending timepoint
+	auto stop = high_resolution_clock::now();
+
+	// Get duration. Substart timepoints to
+	// get duration. To cast it to proper unit
+	// use duration cast method
+	auto duration = duration_cast<microseconds>(stop - start);
+
+	cout << "Time taken by function: "
+		<< duration.count() << " microseconds" << endl;
+
 	cout << "Get total " << num_inliers << " matches." << endl;
 
 	// collect matches
