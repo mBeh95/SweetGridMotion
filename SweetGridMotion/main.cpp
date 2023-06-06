@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <opencv2/xfeatures2d.hpp>
+#include <opencv2/core/hal/interface.h>
 #include <opencv2/xfeatures2d/cuda.hpp>
 #include <opencv2/xfeatures2d/nonfree.hpp>
 #include <opencv2/core.hpp>
@@ -183,7 +184,8 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	// Scale down the window due to the large image
 	resizeWindow("show", show.cols, show.rows);
 	imshow("show", show);
-	useHomography(matches_gms, img1, img2);
+	//const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& GMSkptsRight, vector<DMatch> good_matches, Mat& img1, Mat& img2
+	useHomography(kp1, kp2, matches_gms, img1, img2);
 	waitKey(0);
 }
 

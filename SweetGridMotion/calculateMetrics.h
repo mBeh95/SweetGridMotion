@@ -5,6 +5,9 @@
 #include <opencv2/core/persistence.hpp> // https://docs.opencv.org/3.4/da/d56/classcv_1_1FileStorage.html
 #include <opencv2/features2d.hpp>       // Brute force matcher
 #include <opencv2/highgui.hpp>          // imshow
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/hal/interface.h>
+#include <opencv2/imgproc.hpp>
 #include <iostream>
 
 // Modified code from 
@@ -28,54 +31,54 @@ using namespace std;
 * @param	 img1 is the first image (left image).
 * @param     img2 is the second image (right image).
 */
-void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& GMSkptsRight,
-    Mat& img1, Mat& img2) {
+void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& GMSkptsRight, 
+    vector<DMatch> good_matches, Mat& img1, Mat& img2) {
 
     // Load homography file
-    FileStorage file = FileStorage("Eiffel_vpts.mat", 0);
-    Mat homography = file.getFirstTopLevelNode().mat();
+    //FileStorage file = FileStorage("Eiffel_vpts.mat", 0);
+    //Mat homography = file.getFirstTopLevelNode().mat();
+
+    double homography[3][3] = { {1.32601002878971, -0.0583865106212613, -934.618313266433},
+        {0.293840970834713,	1.08257312730755, 484.497536919587},
+        {0.000336792169880890, -0.000200624987739184, 1} };
+
+    Mat homographyMat(3, 3, CV_64F, homography);
+
     cout << "Homography from img1 to img2" << homography << endl;
 
-    // Hold the descriptors for images 1 and 2.
-    Mat descriptors1, descriptors2;
+    //// Hold the descriptors for images 1 and 2.
+    //Mat descriptors1, descriptors2;
 
-    // Use a brute force hamming distance matcher
-    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
+    //// Use a brute force hamming distance matcher
+    //Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
 
-    // Collect all the matches between the two images
-    vector<vector<DMatch>> matches;
+    //// Collect all the matches between the two images
+    //vector<vector<DMatch>> matches;
 
-    // Do KNN matching and fill the descriptors1 and descriptors2 vectors.
-    matcher->knnMatch(descriptors1, descriptors2, matches, 2);
+    //// Do KNN matching and fill the descriptors1 and descriptors2 vectors.
+    //matcher->knnMatch(descriptors1, descriptors2, matches, 2);
 
-    // Hold all the keypoints that pass Lowe's Ratio Test
+    //// Hold all the keypoints that pass Lowe's Ratio Test
     vector<KeyPoint> matched1, matched2;
 
-    // Lowe's Ratio test threshold
-    double nearestNeighborMatchingRatio = 0.8;
+    //// Lowe's Ratio test threshold
+    //double nearestNeighborMatchingRatio = 0.8;
 
-    // Use Lowe's Ratio test to ensure the descriptors are similar.
-    for (size_t i = 0; i < matches.size(); i++) {
-        DMatch first = matches[i][0];
-        float dist1 = matches[i][0].distance;
-        float dist2 = matches[i][1].distance;
-        if (dist1 < nearestNeighborMatchingRatio * dist2) {
-            matched1.push_back(GMSkptsLeft[first.queryIdx]);
-            matched2.push_back(GMSkptsRight[first.trainIdx]);
-        }
+    for (size_t i = 0; i < good_matches.size(); i++) {
+        matched1.push_back(GMSkptsLeft[good_matches[i].queryIdx]);
+        matched2.push_back(GMSkptsRight[good_matches[i].trainIdx]);
     }
 
     // Hold only the inliers 
     vector<KeyPoint>inliers1, inliers2;
 
-    // Hold only the good matches
-    vector<DMatch> good_matches;
-
     // Distance threshold:
     // A good match is fewer than 2.5 pixels
     // from where the homography says it should be
-    double inlier_threshold = 2.5;
+    double inlier_threshold = 3;
 
+    // For all the matches, check to see if they
+    // fall within the area that the homography says they will
     // For all the matches, check to see if they
     // fall within the area that the homography says they will
     for (int i = 0; i < matched1.size(); i++) {
@@ -88,7 +91,7 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         col.at<double>(1, 0) = matched1[i].pt.y;
 
         // Project the point from image1 to image2
-        col = homography * col;
+        col = homographyMat * col;
         col /= col.at<double>(2, 0);
 
         // Find the euclidean distance between the projected point
@@ -104,8 +107,6 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         }
     }
 
-    Mat trueInliers = file.operator[]("validation.pts").mat();
-
     // Print the results
     cout << "T P = true positives  = good matches that were found by GMS" << endl;
     cout << "F P = false positives = bad  matches that were found and mistaken for good matches by GMS" << endl;
@@ -113,9 +114,8 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
 
     cout << "Total keypoints found in image 1: " << GMSkptsLeft.size() << endl;
     cout << "Total keypoints found in image 2: " << GMSkptsRight.size() << endl;
-    cout << "Total matches found (T P + F P):  " << matches.size() << endl;
+    cout << "Total matches found (T P + F P):  " << good_matches.size() << endl;
     cout << "Total inliers found (T P):        " << inliers1.size() << endl;
-    cout << "Precision = T P / (T P + F P):    " << 100 * inliers1.size() / matches.size() << "%" << endl;
-    cout << "Recall = T P / (T P + F N):       " << 100 * inliers1.size() / trueInliers.size().width << "%" << endl;
+    cout << "Precision = T P / (T P + F P):    " << 100 * inliers1.size() / good_matches.size() << "%" << endl;
 
 }
