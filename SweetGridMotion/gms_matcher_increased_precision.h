@@ -139,7 +139,6 @@ public:
 
 		// How much to offset the index for the subgrid.
 		subGridOffset = offset;
-
 	};
 
 
@@ -317,7 +316,7 @@ private:
 	int getGridIndexLeft(const Point2f& pt, int gridType) {
 		int x = 0, y = 0;
 		
-		if (totalNumberOfCellsLeft > 16)
+		if (totalNumberOfCellsLeft <= 400)
 			subGridOffset = 0;
 
 		//NO SHIFTING

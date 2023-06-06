@@ -32,13 +32,14 @@ using namespace std;
 * @param     img2 is the second image (right image).
 */
 void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& GMSkptsRight, 
-    vector<DMatch> good_matches, Mat& img1, Mat& img2) {
+    vector<DMatch> matchesFoundByGMS, Mat& img1, Mat& img2) {
 
-    // Load homography file
+    // Load homography file - not working
     //FileStorage file = FileStorage("Eiffel_vpts.mat", 0);
     //Mat homography = file.getFirstTopLevelNode().mat();
 
-    double homography[3][3] = { {1.32601002878971, -0.0583865106212613, -934.618313266433},
+    double homography[3][3] = 
+      { {1.32601002878971, -0.0583865106212613, -934.618313266433},
         {0.293840970834713,	1.08257312730755, 484.497536919587},
         {0.000336792169880890, -0.000200624987739184, 1} };
 
@@ -46,66 +47,74 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
 
     std::cout << "Homography from img1 to img2" << homographyMat << endl;
 
-    //// Hold the descriptors for images 1 and 2.
-    //Mat descriptors1, descriptors2;
-
-    //// Use a brute force hamming distance matcher
-    //Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
-
-    //// Collect all the matches between the two images
-    //vector<vector<DMatch>> matches;
-
-    //// Do KNN matching and fill the descriptors1 and descriptors2 vectors.
-    //matcher->knnMatch(descriptors1, descriptors2, matches, 2);
-
-    //// Hold all the keypoints that pass Lowe's Ratio Test
-    vector<KeyPoint> matched1, matched2;
+    // Hold the keypoint coordinates of only the matches from GMS
+    vector<KeyPoint> leftMatchesFromGMS, rightMatchesFromGMS;
+    
+    // Hold any matches that were correct (true positives) that GMS found 
     vector<DMatch> inlier_matches;
 
-    //// Lowe's Ratio test threshold
-    //double nearestNeighborMatchingRatio = 0.8;
-
-    for (size_t i = 0; i < good_matches.size(); i++) {
-        matched1.push_back(GMSkptsLeft[good_matches[i].queryIdx]);
-        matched2.push_back(GMSkptsRight[good_matches[i].trainIdx]);
+    // Fill the matches vectors with the keypoints that were given to GMS from ORB
+    // These are matches that GMS found to be good matches.
+    for (size_t i = 0; i < matchesFoundByGMS.size(); i++) {
+        leftMatchesFromGMS.push_back(GMSkptsLeft[matchesFoundByGMS[i].queryIdx]);
+        rightMatchesFromGMS.push_back(GMSkptsRight[matchesFoundByGMS[i].trainIdx]);
     }
 
-    // Hold only the inliers 
-    vector<KeyPoint>inliers1, inliers2;
+    // Hold only the inliers (true positives) that GMS found.
+    vector<KeyPoint>inliersLeftImage, inliersRightImage;
 
     // Distance threshold:
     // A good match is fewer than 2.5 pixels
     // from where the homography says it should be
     double inlier_threshold = 1000;
 
-    // For all the matches, check to see if they
-    // fall within the area that the homography says they will
-    // For all the matches, check to see if they
-    // fall within the area that the homography says they will
+    // How many inliers were true positives?
     int count = 0;
-    for (int i = 0; i < matched1.size(); i++) {
+
+    // For all the matches, check to see if they
+    // fall within the area that the homography says they will
+    for (int i = 0; i < leftMatchesFromGMS.size(); i++) {
 
         // Create a mat where the calculation can happen
+        // This will be one column with 3 rows of doubles
+        // [ ]
+        // [ ]
+        // [ ]
         Mat col = Mat::ones(3, 1, CV_64F);
 
         // Fill the mat with the x, y coordinates of image1
-        col.at<double>(0, 0) = matched1[i].pt.x;
-        col.at<double>(1, 0) = matched1[i].pt.y;
+        // [x]
+        // [y]
+        // [1]
+        col.at<double>(0, 0) = leftMatchesFromGMS[i].pt.x;
+        col.at<double>(1, 0) = leftMatchesFromGMS[i].pt.y;
+        col.at<double>(2, 0) = 1;
 
         // Project the point from image1 to image2
+        // [x] * homographyMat
+        // [y]
+        // [1]
         col = homographyMat * col;
+
+        // Project the point from image1 to image2
+        // [x2 * scaling factor]
+        // [y2 * scaling factor]
+        // [scaling factor]
         col /= col.at<double>(2, 0);
 
         // Find the euclidean distance between the projected point
         // on image2 and the match that was found in image2.
-        double dist = sqrt(pow(col.at<double>(0, 0) - matched2[i].pt.x, 2)
-            + pow(col.at<double>(1, 0) - matched2[i].pt.y, 2));
+        double dist = 
+
+            // square root of    (x2 - GMSx)^2 + (y2 - GMSy)^2
+            sqrt(pow(col.at<double>(0, 0) - rightMatchesFromGMS[i].pt.x, 2)
+               + pow(col.at<double>(1, 0) - rightMatchesFromGMS[i].pt.y, 2));
 
         // If the distance was within 2.5 pixels add it to the inliers vectors.
         if (dist < inlier_threshold) {
-            /*inlier_matches.push_back(DMatch(matched1[i], matched2[i], 0));
-            inliers1.push_back(matched1[i]);
-            inliers2.push_back(matched2[i]);*/
+            inlier_matches.push_back(DMatch(leftMatchesFromGMS[i], rightMatchesFromGMS[i], 0));
+            inliersLeftImage.push_back(leftMatchesFromGMS[i]);
+            inliersRightImage.push_back(rightMatchesFromGMS[i]);
             count++;
         }
     }
@@ -117,8 +126,8 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
 
     cout << "Total keypoints found in image 1: " << GMSkptsLeft.size() << endl;
     cout << "Total keypoints found in image 2: " << GMSkptsRight.size() << endl;
-    cout << "Total matches found (T P + F P):  " << good_matches.size() << endl;
+    cout << "Total matches found (T P + F P):  " << matchesFoundByGMS.size() << endl;
     cout << "Total inliers found (T P):        " << count << endl;
-    cout << "Precision = T P / (T P + F P):    " << 100 * count / good_matches.size() << "%" << endl;
+    cout << "Precision = T P / (T P + F P):    " << 100 * count / matchesFoundByGMS.size() << "%" << endl;
 
 }
