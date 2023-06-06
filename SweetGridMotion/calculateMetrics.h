@@ -1,3 +1,4 @@
+// 
 // Use the homography between two images to calculate how well GMS performed.
 
 #pragma once
@@ -12,6 +13,7 @@
 
 // Modified code from 
 // https://towardsdatascience.com/improving-your-image-matching-results-by-14-with-one-line-of-code-b72ae9ca2b73
+// https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html#tutorial_homography_Demo3
 
 using namespace cv;
 using namespace std;
