@@ -19,11 +19,12 @@
 #include <iostream>
 #include <vector>
 
+#include "calculateMetrics.h"
 
-//#include "gms_matcher.h"
+#include "gms_matcher.h"
 //#include "gms_matcher_mb.h"
 //#include "gms_matcher_borders.h"
-#include "gms_matcher_rotation_complexity.h"
+//#include "gms_matcher_rotation_complexity.h"
 
 using namespace cv;
 using namespace xfeatures2d;
@@ -83,8 +84,8 @@ void runImagePair() {
 	//Must be in the same folder as cpp file
 	//                          0         1          2                 3             4                5            6              7                8
 	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
-	Mat img1 = imread(photoNames[0]);
-	Mat img2 = imread(photoNames[6]);
+	Mat img1 = imread("EiffelA.png");
+	Mat img2 = imread("EiffelB.png");
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
@@ -148,7 +149,7 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
 
 	//get the number of inliers
-	int num_inliers = gms.GetInlierMask(vbInliers, false, true);
+	int num_inliers = gms.GetInlierMask(vbInliers, false, false);
 
 	// Get ending timepoint
 	auto stop = high_resolution_clock::now();
@@ -162,6 +163,8 @@ void gmsMatch(Mat& img1, Mat& img2) {
 		<< duration.count() << " microseconds" << endl;
 
 	cout << "Get total " << num_inliers << " matches." << endl;
+
+	//useHomography(matches_gms, img1, img2);
 
 	// collect matches
 	for (size_t i = 0; i < vbInliers.size(); ++i)
@@ -180,6 +183,7 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	// Scale down the window due to the large image
 	resizeWindow("show", show.cols, show.rows);
 	imshow("show", show);
+	useHomography(matches_gms, img1, img2);
 	waitKey(0);
 }
 
