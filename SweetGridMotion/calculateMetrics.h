@@ -44,7 +44,7 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
 
     Mat homographyMat(3, 3, CV_64F, homography);
 
-    cout << "Homography from img1 to img2" << homography << endl;
+    std::cout << "Homography from img1 to img2" << homographyMat << endl;
 
     //// Hold the descriptors for images 1 and 2.
     //Mat descriptors1, descriptors2;
@@ -60,6 +60,7 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
 
     //// Hold all the keypoints that pass Lowe's Ratio Test
     vector<KeyPoint> matched1, matched2;
+    vector<DMatch> inlier_matches;
 
     //// Lowe's Ratio test threshold
     //double nearestNeighborMatchingRatio = 0.8;
@@ -75,12 +76,13 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
     // Distance threshold:
     // A good match is fewer than 2.5 pixels
     // from where the homography says it should be
-    double inlier_threshold = 3;
+    double inlier_threshold = 1000;
 
     // For all the matches, check to see if they
     // fall within the area that the homography says they will
     // For all the matches, check to see if they
     // fall within the area that the homography says they will
+    int count = 0;
     for (int i = 0; i < matched1.size(); i++) {
 
         // Create a mat where the calculation can happen
@@ -101,9 +103,10 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
 
         // If the distance was within 2.5 pixels add it to the inliers vectors.
         if (dist < inlier_threshold) {
-            good_matches.push_back(DMatch(inliers1.size(), inliers2.size(), 0));
+            /*inlier_matches.push_back(DMatch(matched1[i], matched2[i], 0));
             inliers1.push_back(matched1[i]);
-            inliers2.push_back(matched2[i]);
+            inliers2.push_back(matched2[i]);*/
+            count++;
         }
     }
 
@@ -115,7 +118,7 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
     cout << "Total keypoints found in image 1: " << GMSkptsLeft.size() << endl;
     cout << "Total keypoints found in image 2: " << GMSkptsRight.size() << endl;
     cout << "Total matches found (T P + F P):  " << good_matches.size() << endl;
-    cout << "Total inliers found (T P):        " << inliers1.size() << endl;
-    cout << "Precision = T P / (T P + F P):    " << 100 * inliers1.size() / good_matches.size() << "%" << endl;
+    cout << "Total inliers found (T P):        " << count << endl;
+    cout << "Precision = T P / (T P + F P):    " << 100 * count / good_matches.size() << "%" << endl;
 
 }
