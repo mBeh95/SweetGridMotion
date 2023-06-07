@@ -1,5 +1,5 @@
-// Breanna Powell
-// Goal 3: Increase the Precision using a subsection.
+// Breanna Powell and Melody 
+// Goal 3: Increase the Precision using a sub-grid.
 // The changes to the algorithm are on lines 
 // 177-182; 
 // 
@@ -113,7 +113,8 @@ public:
 		vector<Point2f> np2,
 		vector<pair<int, int> > subGridMatches,
 		const Size gridSize = Size(80, 80),
-		const int offset = 0
+		const int leftOffset = 0,
+		const int rightOffset = 0
 	)
 	{
 		normalizedPoints1 = np1;
@@ -139,7 +140,8 @@ public:
 		initializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 
 		// How much to offset the index for the subgrid.
-		subGridOffset = offset;
+		subGridLeftOffset = leftOffset;
+		subGridRightOffset = rightOffset;
 	};
 
 
@@ -171,7 +173,7 @@ private:
 	Mat mGridNeighborLeft; //Initialized in the GMS constructor - 400 by 9 matrix
 
 	// How much to offset the index for the subgrid.
-	int subGridOffset;
+	int subGridLeftOffset, subGridRightOffset;
 
 	//+++++++++++++++++++++++++ INITIALIZED DURING RUNTIME ++++++++++++++++++++++++++++//
 
@@ -395,9 +397,9 @@ private:
 	int getGridIndexLeft(const Point2f& pt, int gridType) {
 		int x = 0, y = 0;
 		
-		// Make sure that this is not a subgrid
+		// Make sure that this is not a subgrid, which would have more cells than 400
 		if (totalNumberOfCellsLeft <= 400)
-			subGridOffset = 0;
+			subGridLeftOffset = 0;
 
 		//NO SHIFTING
 		if (gridType == 1) {
@@ -440,7 +442,7 @@ private:
 		}
 
 		//Return the grid index of the point (in the LEFT image)
-		return x + y * mGridSizeLeft.width + subGridOffset;
+		return x + y * mGridSizeLeft.width + subGridLeftOffset;
 	}
 
 	/** Return the starting index for the right grid / image
@@ -453,7 +455,7 @@ private:
 		int x = floor(pt.x * mGridSizeRight.width);
 		int y = floor(pt.y * mGridSizeRight.height);
 
-		return x + y * mGridSizeRight.width;
+		return x + y * mGridSizeRight.width + subGridRightOffset;
 	}
 
 	/** Assign Match Pairs
@@ -856,15 +858,27 @@ void gms_matcher::runSubInliers() {
 		// When making a sub-grid for one cell, the larger grid needs to be made into an 80 by 80 grid
 		Size totalSize = Size(subSize.width * mGridSizeLeft.width, subSize.height * mGridSizeLeft.height);
 
-		// The offset will be the bestCellIndex multiplied by the dimensions of the sub-grid
-		int rows = (bestCellIndex / mGridSizeLeft.height) * subSize.height * subSize.width * mGridSizeLeft.width;
-		int cols = (bestCellIndex % mGridSizeLeft.height) * subSize.height * subSize.width;
+		// +++++++++ LEFT OFFSET - FOR INDEXING into the left grid +++++++//
+
+		// The offset will be the bestCellIndex LEFT multiplied by the dimensions of the sub-grid
+		int verticalOffset = (bestCellIndex / mGridSizeLeft.width) * subSize.height * subSize.width * mGridSizeLeft.width;
+		int horizontalOffset = (bestCellIndex % mGridSizeLeft.width) * subSize.width;
 		
-		// The offset will tell where to begin with the grid indexing in the subgrid
-		int offset =  rows + cols;
+		// The left offset will tell where to begin with the grid indexing in the subgrid
+		int leftOffset = horizontalOffset + verticalOffset;
+
+		// +++++++++ RIGHT OFFSET - FOR INDEXING into the right grid +++++++//
+		int bestCellRight = bestCellPairs[bestCellIndex];
+
+		// The offset will be the bestCellIndex RIGHT multiplied by the dimensions of the sub-grid
+		int verticalOffset = (bestCellRight / mGridSizeRight.width) * subSize.height * subSize.width * mGridSizeRight.width;
+		int horizontalOffset = (bestCellRight % mGridSizeRight.width) * subSize.width;
+
+		// The left offset will tell where to begin with the grid indexing in the subgrid
+		int rightOffset = horizontalOffset + verticalOffset;
 
 		// Make a subGrid
-		gms_matcher subGrid(normalizedPoints1, normalizedPoints2, cellMatches, totalSize, offset);
+		gms_matcher subGrid(normalizedPoints1, normalizedPoints2, cellMatches, totalSize, leftOffset, rightOffset);
 		
 		// Get an inlier mask from the subgrid
 		subGrid.GetInlierMask(subInliers, withRotationCheck, withScalingCheck);
