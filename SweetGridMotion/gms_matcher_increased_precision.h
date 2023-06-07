@@ -107,12 +107,13 @@ public:
 		initializeNeighbors(mGridNeighborLeft, mGridSizeLeft);
 	};
 
+	// CONSTRUCTOR FOR THE SUBGRID:
 	gms_matcher(
 		vector<Point2f> np1,
 		vector<Point2f> np2,
 		vector<pair<int, int> > subGridMatches,
 		const Size gridSize = Size(80, 80),
-		const int offset
+		const int offset = 0
 	)
 	{
 		normalizedPoints1 = np1;
@@ -256,6 +257,8 @@ public:
 	int GetInlierMask(vector<bool>& inliersToReturn,
 		bool withScale = false, bool withRotation = false);
 
+	void printGrid();
+
 private:
 
 	/** Normalize Key Points to Range (0 - 1)
@@ -303,6 +306,82 @@ private:
 		}
 	}
 
+
+	/** Get Neighbor 9
+	* @pre       There is a grid on an image.
+	*            initializeNeighbors calls this function.
+	* @post      Fill in NB9 with indexes for the neighbors for one cell.
+	* @param	 idx is the index of ONE CELL in the grid.
+	* @param     gridSize is the dimensions of the grid (20 by 20)
+	*/
+	vector<int> getNB9(const int idx, const Size& gridSize) {
+
+		//A vector of 9 slots filled with -1's
+		vector<int> NB9(9, -1);
+
+		//Find out what cell to look at within the 20 by 20 grid
+		int idx_x = idx % gridSize.width; //What part of the grid - in the x dimension?
+		int idx_y = idx / gridSize.width; //What part of the grid - in the y dimension?
+
+		//Repeat for yi equals -1, 0, and 1
+		for (int yi = -1; yi <= 1; yi++)
+		{
+			//Repeat for xi equals -1, 0, and 1
+			for (int xi = -1; xi <= 1; xi++)
+			{
+
+				//Look left, center, right and up, center, down for each cell
+				int idx_xx = idx_x + xi; // -1 would be left; 0 is center; 1 is right
+				int idx_yy = idx_y + yi; // -1 would be up; 0 is center; 1 is down
+
+				//Make sure you do not go out of bounds
+				if (idx_xx < 0 ||
+					idx_xx >= gridSize.width ||
+					idx_yy < 0 ||
+					idx_yy >= gridSize.height)
+					continue;
+
+				// Fill in the NB9 vector
+				// When xi is -1 and yi is -1, this indexes to NB9[0]
+				// When xi is  0 and yi is -1, this indexes to NB9[1]
+				// When xi is  1 and yi is -1, this indexes to NB9[2]
+				// When xi is -1 and yi is  0, this indexes to NB9[3]
+				// When xi is  0 and yi is  0, this indexes to NB9[4]
+				// When xi is  1 and yi is  0, this indexes to NB9[5]
+				// When xi is -1 and yi is  1, this indexes to NB9[6]
+				// When xi is  0 and yi is  1, this indexes to NB9[7]
+				// When xi is  1 and yi is  1, this indexes to NB9[8]
+				NB9[xi + 4 + yi * 3] = idx_xx + idx_yy * gridSize.width;
+			}
+		}
+		return NB9;
+	}
+
+	/** Initialize the neighbor matrices.
+	* @pre       The gridSize is known.
+	*            This function will be called twice,
+	*			 once for the left image and once for the right image.
+	* @post      Fill the neighbors matrices with indexes to the neighbors for each cell.
+	* @param	 neighbor is the matrix of neighbors (400 by 9) for one grid / image
+	* @param     gridSize is the dimensions of one grid
+	*/
+	void initializeNeighbors(Mat& neighbor, const Size& gridSize) {
+
+		//Repeat for ALL CELLS in the grid (400 cells if 20 by 20)
+		for (int i = 0; i < neighbor.rows; i++)
+		{
+			// Grab the neighbor indexes for the cell
+			vector<int> NB9 = getNB9(i, gridSize);
+
+			// The data pointer points to the neighbor for 
+			int* data = neighbor.ptr<int>(i);
+
+			// data is the destination; NB9 is the source to copy over
+			// Fill the neighbor vector with the indexes of all its neighbors
+			memcpy(data, &NB9[0], sizeof(int) * 9);
+		}
+	}
+
 	/** Return the starting index for the left grid / image
 	* @pre       normalizedPoints1 and normalizedPoints2 and initialMatches have been filled.
 	*			 A valid point is passed to the function.
@@ -316,6 +395,7 @@ private:
 	int getGridIndexLeft(const Point2f& pt, int gridType) {
 		int x = 0, y = 0;
 		
+		// Make sure that this is not a subgrid
 		if (totalNumberOfCellsLeft <= 400)
 			subGridOffset = 0;
 
@@ -395,81 +475,6 @@ private:
 	* @param     rotationType is one of 8 rotation patterns.
 	*/
 	void verifyCellPairs(int rotationType);
-
-	/** Get Neighbor 9
-	* @pre       There is a grid on an image.
-	*            initializeNeighbors calls this function.
-	* @post      Fill in NB9 with indexes for the neighbors for one cell.
-	* @param	 idx is the index of ONE CELL in the grid.
-	* @param     gridSize is the dimensions of the grid (20 by 20)
-	*/
-	vector<int> getNB9(const int idx, const Size& gridSize) {
-
-		//A vector of 9 slots filled with -1's
-		vector<int> NB9(9, -1);
-
-		//Find out what cell to look at within the 20 by 20 grid
-		int idx_x = idx % gridSize.width; //What part of the grid - in the x dimension?
-		int idx_y = idx / gridSize.width; //What part of the grid - in the y dimension?
-
-		//Repeat for yi equals -1, 0, and 1
-		for (int yi = -1; yi <= 1; yi++)
-		{
-			//Repeat for xi equals -1, 0, and 1
-			for (int xi = -1; xi <= 1; xi++)
-			{
-
-				//Look left, center, right and up, center, down for each cell
-				int idx_xx = idx_x + xi; // -1 would be left; 0 is center; 1 is right
-				int idx_yy = idx_y + yi; // -1 would be up; 0 is center; 1 is down
-
-				//Make sure you do not go out of bounds
-				if (idx_xx < 0 ||
-					idx_xx >= gridSize.width ||
-					idx_yy < 0 ||
-					idx_yy >= gridSize.height)
-					continue;
-
-				// Fill in the NB9 vector
-				// When xi is -1 and yi is -1, this indexes to NB9[0]
-				// When xi is  0 and yi is -1, this indexes to NB9[1]
-				// When xi is  1 and yi is -1, this indexes to NB9[2]
-				// When xi is -1 and yi is  0, this indexes to NB9[3]
-				// When xi is  0 and yi is  0, this indexes to NB9[4]
-				// When xi is  1 and yi is  0, this indexes to NB9[5]
-				// When xi is -1 and yi is  1, this indexes to NB9[6]
-				// When xi is  0 and yi is  1, this indexes to NB9[7]
-				// When xi is  1 and yi is  1, this indexes to NB9[8]
-				NB9[xi + 4 + yi * 3] = idx_xx + idx_yy * gridSize.width;
-			}
-		}
-		return NB9;
-	}
-
-	/** Initialize the neighbor matrices.
-	* @pre       The gridSize is known.
-	*            This function will be called twice,
-	*			 once for the left image and once for the right image.
-	* @post      Fill the neighbors matrices with indexes to the neighbors for each cell.
-	* @param	 neighbor is the matrix of neighbors (400 by 9) for one grid / image
-	* @param     gridSize is the dimensions of one grid
-	*/
-	void initializeNeighbors(Mat& neighbor, const Size& gridSize) {
-
-		//Repeat for ALL CELLS in the grid (400 cells if 20 by 20)
-		for (int i = 0; i < neighbor.rows; i++)
-		{
-			// Grab the neighbor indexes for the cell
-			vector<int> NB9 = getNB9(i, gridSize);
-
-			// The data pointer points to the neighbor for 
-			int* data = neighbor.ptr<int>(i);
-
-			// data is the destination; NB9 is the source to copy over
-			// Fill the neighbor vector with the indexes of all its neighbors
-			memcpy(data, &NB9[0], sizeof(int) * 9);
-		}
-	}
 
 	/** Set the scale for image 2 (the right image)
 	* @pre		 Image 1, the left image, has a grid, and
@@ -798,6 +803,25 @@ void gms_matcher::findMaxCell() {
 			cellsOrderedByNumberOfMatches.push(make_pair(mNumberPointsInPerCellLeft[i], i));
 }
 
+void gms_matcher::printGrid() {
+
+	int idx = cellsOrderedByNumberOfMatches.top().second;
+
+	//Find out what cell to look at within the 20 by 20 grid
+	int idx_x = idx % mGridSizeLeft.width; //What part of the grid - in the x dimension?
+	int idx_y = idx / mGridSizeLeft.width; //What part of the grid - in the y dimension?
+
+	for (int row = 0; row < mGridSizeLeft.width; row++) {
+		for (int col = 0; col < mGridSizeLeft.height; col++) {
+			if (row == idx_x && col == idx_y)
+				cout << "0";
+			else
+				cout << "x";
+		}
+		cout << endl;
+	}
+}
+
 
 /** Run the subgrid function
 * @pre       Found the cell with the max number of inliers.
@@ -940,6 +964,6 @@ int gms_matcher::run(int rotationType) {
 	}
 
 	// Return the total number of inliers found
-	int num_inlier = sum(mvbInlierMask)[0];
+	num_inlier = sum(mvbInlierMask)[0];
 	return num_inlier;
 }

@@ -152,6 +152,7 @@ opencv_features2d470d.lib;opencv_imgproc470d.lib;%(AdditionalDependencies)</Addi
   <ItemGroup>
     <ClCompile Include="gms_commented_refactored.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="printing.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
