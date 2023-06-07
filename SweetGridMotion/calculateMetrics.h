@@ -65,10 +65,10 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         rightMatchesFromGMS.push_back(GMSkptsRight[matchesFoundByGMS[i].trainIdx]);
 
         cout << "matchesFoundByGMS at queryIdx: " << matchesFoundByGMS[i].queryIdx << endl;
-        cout << "matchesFoundByGMS at trainIdx: " << matchesFoundByGMS[i].trainIdx << endl;
+        cout << "matchesFoundByGMS at trainIdx: " << matchesFoundByGMS[i].trainIdx << endl << endl;
 
         cout << "GMSkptsLeft[matchesFoundByGMS[i].queryIdx]: " << GMSkptsLeft[matchesFoundByGMS[i].queryIdx].pt << endl;
-        cout << "GMSkptsRight[matchesFoundByGMS[i].trainIdx]: " << GMSkptsRight[matchesFoundByGMS[i].trainIdx].pt << endl;
+        cout << "GMSkptsRight[matchesFoundByGMS[i].trainIdx]: " << GMSkptsRight[matchesFoundByGMS[i].trainIdx].pt << endl<< endl;
 
     }
 
