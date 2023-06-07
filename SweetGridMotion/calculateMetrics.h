@@ -9,6 +9,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/imgproc.hpp>
+
 #include <iostream>
 
 // Modified code from 
@@ -40,10 +41,14 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
     //FileStorage file = FileStorage("Eiffel_vpts.mat", 0);
     //Mat homography = file.getFirstTopLevelNode().mat();
 
-    double homography[3][3] = 
+    /*double homography[3][3] = 
       { {1.32601002878971, -0.0583865106212613, -934.618313266433},
         {0.293840970834713,	1.08257312730755, 484.497536919587},
-        {0.000336792169880890, -0.000200624987739184, 1} };
+        {0.000336792169880890, -0.000200624987739184, 1} };*/
+
+    double homography[3][3] = { {0.929315345255432, -0.121244736991080, 50.7244433172911},
+    {-0.0275532282755572, 0.808809574501722, 832.934983027886},
+        {-0.000014365821012690, -0.000142061737799082, 1} };
 
     Mat homographyMat(3, 3, CV_64F, homography);
 
@@ -68,7 +73,7 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
     // Distance threshold:
     // A good match is fewer than 2.5 pixels
     // from where the homography says it should be
-    double inlier_threshold = 1000;
+    double inlier_threshold = 10;
 
     // How many inliers were true positives?
     int count = 0;
@@ -82,15 +87,18 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         // [ ]
         // [ ]
         // [ ]
-        Mat col = Mat::ones(3, 1, CV_64F);
+        //Mat col = Mat::ones(3, 1, CV_64F);
+        Mat col = (Mat_<double>(3, 1) << leftMatchesFromGMS[i].pt.x, leftMatchesFromGMS[i].pt.y, 1);
 
         // Fill the mat with the x, y coordinates of image1
         // [x]
         // [y]
         // [1]
-        col.at<double>(0, 0) = leftMatchesFromGMS[i].pt.x;
-        col.at<double>(1, 0) = leftMatchesFromGMS[i].pt.y;
-        col.at<double>(2, 0) = 1;
+        //col.at<double>(0, 0) = leftMatchesFromGMS[i].pt.x;
+        //col.at<double>(1, 0) = leftMatchesFromGMS[i].pt.y;
+        //col.at<double>(2, 0) = 1;
+
+        cout << "THIS IS COL AT X Y Z" << endl << col.at<double>(0, 0) << endl << col.at<double>(1, 0) << endl << col.at<double>(2, 0) << endl;
 
         // Project the point from image1 to image2
         // [x] * homographyMat
@@ -98,11 +106,15 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         // [1]
         col = homographyMat * col;
 
+        cout << "THIS IS COL AT X Y Z" << endl << col.at<double>(0, 0) << endl << col.at<double>(1, 0) << endl << col.at<double>(2, 0) << endl;
+
         // Project the point from image1 to image2
         // [x2 * scaling factor]
         // [y2 * scaling factor]
         // [scaling factor]
         col /= col.at<double>(2, 0);
+
+        cout << "THIS IS COL AT X Y Z" << endl << col.at<double>(0, 0) << endl << col.at<double>(1, 0) << endl << col.at<double>(2, 0) << endl;
 
         // Find the euclidean distance between the projected point
         // on image2 and the match that was found in image2.
@@ -112,9 +124,11 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
             sqrt(pow(col.at<double>(0, 0) - rightMatchesFromGMS[i].pt.x, 2)
                + pow(col.at<double>(1, 0) - rightMatchesFromGMS[i].pt.y, 2));
 
+        //DMatch matchQuery = DMatch(leftMatchesFromGMS[i], rightMatchesFromGMS[i], 0);
+
         // If the distance was within 2.5 pixels add it to the inliers vectors.
         if (dist < inlier_threshold) {
-            inlier_matches.push_back(DMatch(leftMatchesFromGMS[i], rightMatchesFromGMS[i], 0));
+            //inlier_matches.push_back((leftMatchesFromGMS[i], rightMatchesFromGMS[i]));
             inliersLeftImage.push_back(leftMatchesFromGMS[i]);
             inliersRightImage.push_back(rightMatchesFromGMS[i]);
             count++;
