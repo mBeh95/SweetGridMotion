@@ -1,4 +1,6 @@
 // Breanna Powell and Melody Behdarvandian
+// Changes and additions on lines: 42 to 82; 88 to 90; 127 to 143; 150 to 170; 184 to 191;
+// Addtional commented out code from 245 to 310
 
 #include <iostream>
 #include <opencv2/xfeatures2d.hpp>
@@ -105,7 +107,7 @@ int main()
 }
 
 
-///** drawInlier
+///** gmsMatch
 //* @pre       Two valid images have been opened, and their keypoints
 //*            have been matched. This will output the true matches
 //			   between the two images
@@ -167,8 +169,6 @@ void gmsMatch(Mat& img1, Mat& img2) {
 		<< duration.count() << " microseconds" << endl;
 
 	cout << "Get total " << num_inliers << " matches." << endl;
-
-	//useHomography(matches_gms, img1, img2);
 
 	// collect matches
 	for (size_t i = 0; i < vbInliers.size(); ++i)
@@ -243,6 +243,12 @@ Mat drawInlier(Mat& src1, Mat& src2, vector<KeyPoint>& kpt1, vector<KeyPoint>& k
 	return output;
 }
 
+/*************************** NOTE FOR THIS CODE BELOW **************************************
+* This section of the code was testing done to run the OpenCV version of GMS
+* Because the results of the OpenCV gms were poor, this code was rendered unusable
+* We have decided to keep it as a comment to show the work that was done during the
+* eperimental phase of our project
+*/
 
 /*
 int main()

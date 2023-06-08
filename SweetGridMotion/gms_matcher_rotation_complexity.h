@@ -1,6 +1,8 @@
 // Breanna Powell and Melody Behdarvandian
 // Original Author: Jiawang Bian, Postdoctoral Researcher
 // 
+// Code changes for this copy on lines: 189 to 199; 492; 498 to 521; 531 to 556; 710 to 729; 747 to 748; 750 to 831
+// 
 // The constructor and GetInlierMask are public
 // all other methods are private.
 // 
@@ -184,15 +186,17 @@ private:
 	// Size   : the total number of matches found initially
 	vector<bool> mvbInlierMask;
 
-	// Store the best orientation, to early stop when going through other grid types.
-	// if -1, then not set yet
-	// if greater than
-
+	//Check to see if the rotation is set to true
 	bool withRotationCheck;
+
+	//Save the best Rotation possible
 	int bestRotation;
+
+	//Save the best Grid
 	int bestGrid;
+
+	//Save the most number of inliers per rotation
 	int maximumInlier;
-	bool twice;
 
 
 
@@ -477,6 +481,11 @@ private:
 *            Fill the inliersToReturn vector with true correspondences.
 *            Return the count of inliers found.
 * 
+*			The code has been modified to accomodate the new early stopping method that
+*			 is implemented to lower the number of rotations for grids 3 and 4.
+*			The changes made here are the addtion of the gridType loop that will call on
+*			run based on each gridType while completely removing the rotation loops
+* 
 * @param	 inliersToReturn is the true correspondences between the images
 * @param     WithScale if true indicates the 2nd image is scaled
 * @param     WithRotation if true indicates the 2nd image is rotated
@@ -697,8 +706,11 @@ void gms_matcher::VerifyCellPairs(int RotationType) {
 *            As the algorithm goes through each iteration,
 *            more inliers are found and added.
 *            This calls the AssignMatchPairs and VerifyCellPairs functions.
-* @param     RotationType is one of 8 rotation patterns.
-*            This is needed for the VerifyCellPairs method.
+*			 The code has been modified to accomodate the new early stopping method that
+*			 is implemented to lower the number of rotations for grids 3 and 4.
+* 
+* @param     GridType is one of 4 grid patterns.
+*            This is needed for the AssignMatchPairs method.
 * @return    The number of inliers
 */
 int gms_matcher::run(int GridType) {
@@ -743,6 +755,8 @@ int gms_matcher::run(int GridType) {
 		num_inlier = sum(mvbInlierMask)[0];
 		return num_inlier;
 	}
+	// At this point we have gone through two grids and there is a common rotation between them
+	// that will perform the best in terms of outputing a large number of inliers
 	else if (bestRotation > 0 && GridType > 2)
 	{
 		// Set motion statistics vector to all 0s
@@ -757,7 +771,7 @@ int gms_matcher::run(int GridType) {
 		// Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors
 		AssignMatchPairs(GridType);
 
-		// Fill in the mCellPairs vector
+		// Fill in the mCellPairs vector with best rotation
 		VerifyCellPairs(bestRotation);
 
 		// Mark inliers
@@ -816,10 +830,12 @@ int gms_matcher::run(int GridType) {
 				}
 			}
 
-			// Return the total number of inliers found
+			// Get the number of inliers
 			num_inlier = sum(mvbInlierMask)[0];
+			//check if it's larger than the maximum inliers retrieved from previous rotations
 			if (num_inlier > maximumInlier)
 			{
+				// if larger update the maximumInlier and bestRotation with current values
 				maximumInlier = num_inlier;
 				bestRotation = RotationType;
 			}
