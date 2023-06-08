@@ -155,7 +155,7 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
 
 	//get the number of inliers
-	int num_inliers = gms.GetInlierMask(vbInliers, false, false);
+	int num_inliers = gms.getInlierMask(vbInliers, false, false);
 
 	// Get ending timepoint
 	auto stop = high_resolution_clock::now();

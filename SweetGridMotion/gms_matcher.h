@@ -113,7 +113,7 @@ public:
 
 	// Get Inlier Mask
 	// Return number of inliers 
-	int GetInlierMask(vector<bool> &vbInliers, bool WithScale = false, bool WithRotation = false);
+	int getInlierMask(vector<bool> &vbInliers, bool WithScale = false, bool WithRotation = false);
 
 private:
 
@@ -242,7 +242,7 @@ private:
 	int run(int RotationType);
 };
 
-int gms_matcher::GetInlierMask(vector<bool> &vbInliers, bool WithScale, bool WithRotation) {
+int gms_matcher::getInlierMask(vector<bool> &vbInliers, bool WithScale, bool WithRotation) {
 
 	int max_inlier = 0;
 

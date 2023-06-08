@@ -1,7 +1,7 @@
 // 
 // Original Author: Jiawang Bian, Postdoctoral Researcher
 // 
-// The constructor and GetInlierMask are public
+// The constructor and getInlierMask are public
 // all other methods are private.
 // 
 // We refactored the following names to be more descriptive:
@@ -157,7 +157,7 @@ private:
 	int totalNumberOfCellsRight;
 
 	// All possible neighbors for all possible cells in each grid (right grid / image)
-	Mat mGridNeighborRight; //Initialized at runtime in the setScale function from GetInlierMask - depends on scale
+	Mat mGridNeighborRight; //Initialized at runtime in the setScale function from getInlierMask - depends on scale
 
 	// x	  : left grid idx
 	// y      : right grid idx
@@ -190,10 +190,10 @@ private:
 public:
 
 	/** Get the inliers between two images
-	* @pre       The GetInlierMask public method is called.
+	* @pre       The getInlierMask public method is called.
 	*
 	* @post      This public method will run GMS.
-	*            Depending on the settings provided when the GetInlierMask is called,
+	*            Depending on the settings provided when the getInlierMask is called,
 	*            this will either run without scale or rotation,
 	*            with scale OR with rotation, or with BOTH scale AND rotation,
 	*
@@ -205,7 +205,7 @@ public:
 	* @param     withRotation if true indicates the 2nd image is rotated
 	* @return    return the max_inlier (count of inliers found)
 	*/
-	int GetInlierMask(vector<bool>& inliersToReturn, 
+	int getInlierMask(vector<bool>& inliersToReturn, 
 		bool withScale = false, bool withRotation = false);
 
 private:
@@ -326,7 +326,7 @@ private:
 	}
 
 	/** Assign Match Pairs
-	* @pre       The public GetInlierMask function called the run function,
+	* @pre       The public getInlierMask function called the run function,
 	*            which called this function.
 	* @post      Get the grid indexes for the pairs of points in every match.
 	*            Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
@@ -422,7 +422,7 @@ private:
 
 	/** Set the scale for image 2 (the right image)
 	* @pre		 Image 1, the left image, has a grid, and 
-	*            This is called within the GetInlierMask function
+	*            This is called within the getInlierMask function
 	*            to make sure that 5 different scales are tried.
 	* @post      Initialize the neighbor vector for the right image.
 	*            In other words, fill the mGridNeighborRight vector.
@@ -442,7 +442,7 @@ private:
 	}
 
 	/** RUN GMS
-	* @pre       run is called from the public GetInlierMask function.
+	* @pre       run is called from the public getInlierMask function.
 	* @post      All inliers in mvbInlierMask
 	*            will be initialized to false.
 	*            As the algorithm goes through each iteration,
@@ -457,10 +457,10 @@ private:
 };
 
 /** Get the inliers between two images
-* @pre       The GetInlierMask public method is called.
+* @pre       The getInlierMask public method is called.
 * 
 * @post      This public method will run GMS.
-*            Depending on the settings provided when the GetInlierMask is called,
+*            Depending on the settings provided when the getInlierMask is called,
 *            this will either run without scale or rotation, 
 *            with scale OR with rotation, or with BOTH scale AND rotation,
 *
@@ -472,7 +472,7 @@ private:
 * @param     withRotation if true indicates the 2nd image is rotated
 * @return    return the max_inlier (count of inliers found)
 */
-int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bool withRotation) {
+int gms_matcher::getInlierMask(vector<bool>& inliersToReturn, bool withScale, bool withRotation) {
 
 	int max_inlier = 0;
 
@@ -548,7 +548,7 @@ int gms_matcher::GetInlierMask(vector<bool>& inliersToReturn, bool withScale, bo
 
 
 /** Assign Match Pairs
-* @pre       The public GetInlierMask function called the run function,
+* @pre       The public getInlierMask function called the run function,
 *            which called this function.
 * @post      Get the grid indexes for the pairs of points in every match.
 *            Fill the mMotionStatistics and mNumberPointsInPerCellLeft vectors.
@@ -682,7 +682,7 @@ void gms_matcher::verifyCellPairs(int rotationType) {
 }
 
 /** RUN GMS
-* @pre       run is called from the public GetInlierMask function.
+* @pre       run is called from the public getInlierMask function.
 * @post      All inliers in mvbInlierMask
 *            will be initialized to false.
 *            As the algorithm goes through each iteration,
