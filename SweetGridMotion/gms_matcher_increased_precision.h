@@ -1,9 +1,10 @@
 // Breanna Powell and Melody Behdarvandian
 // Goal 3: Increase the Precision using a sub-grid.
 // The changes to the algorithm are on lines 
-// 177-182; 
+// 110-145; 175-176; 206; 219-239; 397-399; 442; 455; 499-514; 559-561; 
+// 590-592; 613-615; 638-640; 646-648; 788-881; 909-910; 
 // 
-// Results: 
+// Results: Inconclusive -- more testing is required
 // 
 // This is based on 
 // GMS: Grid - based Motion Statistics for Fast, Ultra - robust Feature Correspondence.
@@ -259,8 +260,6 @@ public:
 	int getInlierMask(vector<bool>& inliersToReturn,
 		bool withScale = false, bool withRotation = false);
 
-	void printGrid();
-
 private:
 
 	/** Normalize Key Points to Range (0 - 1)
@@ -307,7 +306,6 @@ private:
 			initialMatches[i] = pair<int, int>(vDMatches[i].queryIdx, vDMatches[i].trainIdx);
 		}
 	}
-
 
 	/** Get Neighbor 9
 	* @pre       There is a grid on an image.
@@ -804,26 +802,6 @@ void gms_matcher::findMaxCell() {
 			// Add the number of matches found in that cell and the index of the left image
 			cellsOrderedByNumberOfMatches.push(make_pair(mNumberPointsInPerCellLeft[i], i));
 }
-
-void gms_matcher::printGrid() {
-
-	int idx = cellsOrderedByNumberOfMatches.top().second;
-
-	//Find out what cell to look at within the 20 by 20 grid
-	int idx_x = idx % mGridSizeLeft.width; //What part of the grid - in the x dimension?
-	int idx_y = idx / mGridSizeLeft.width; //What part of the grid - in the y dimension?
-
-	for (int row = 0; row < mGridSizeLeft.width; row++) {
-		for (int col = 0; col < mGridSizeLeft.height; col++) {
-			if (row == idx_x && col == idx_y)
-				cout << "0";
-			else
-				cout << "x";
-		}
-		cout << endl;
-	}
-}
-
 
 /** Run the subgrid function
 * @pre       Found the cell with the max number of inliers.

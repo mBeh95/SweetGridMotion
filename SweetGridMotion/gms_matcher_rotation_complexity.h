@@ -1,8 +1,8 @@
 // Breanna Powell and Melody Behdarvandian
 // Original Author: Jiawang Bian, Postdoctoral Researcher
 // 
-// Code changes for this copy on lines: 189 to 199; 492; 498 to 521; 531 to 556; 710 to 729; 747 to 748; 750 to 831
-// This file specialize in creating an earlyy stopping method that will limit the number of rotations done per grid
+// Code changes for this copy on lines: 189 to 199; 492; 498 to 521; 531 to 556; 706 onward (Run method)
+// This file specialize in creating an early stopping method that will limit the number of rotations done per grid
 // in order to improve time complexity. After various tests with different images, an assumption is made that the
 // best rotation for one grid will be the same for another.
 // 

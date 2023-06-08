@@ -1,12 +1,12 @@
 // Breanna Powell and Melody Behdarvandian
 // Changes and additions on lines: 42 to 82; 88 to 90; 127 to 143; 150 to 170; 184 to 191;
-// Addtional commented out code from 245 to 310
+// Additional commented out code from 245 to 310
 
 #include <iostream>
-#include <opencv2/xfeatures2d.hpp>
+// #include <opencv2/xfeatures2d.hpp>          // For running the OpenCV version of GMS, which works poorly
+// #include <opencv2/xfeatures2d/cuda.hpp>     // For running the OpenCV version of GMS, which works poorly
+// #include <opencv2/xfeatures2d/nonfree.hpp>  // For running the OpenCV version of GMS, which works poorly
 #include <opencv2/core/hal/interface.h>
-#include <opencv2/xfeatures2d/cuda.hpp>
-#include <opencv2/xfeatures2d/nonfree.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -30,8 +30,8 @@
 //#include "gms_matcher_increased_Precision.h"
 
 using namespace cv;
-using namespace xfeatures2d;
-using namespace cuda;
+// using namespace xfeatures2d; // For running the OpenCV version of GMS, which works poorly
+// using namespace cuda;        // For running the OpenCV version of GMS, which works poorly
 using namespace std;
 using namespace std::chrono;
 
@@ -82,6 +82,11 @@ void orbKeyDes(Mat* descriptOne, Mat* descriptTwo,
 	matcher.match(*descriptOne, *descriptTwo, *matches);
 }
 
+
+/** runImagePair
+* @pre       Two valid images exist in the solution
+* @post      Reads in the two images         
+*/
 void runImagePair() {
 	//Both images are retrieved.
 	//Must be in the same folder as cpp file

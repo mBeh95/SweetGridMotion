@@ -1,4 +1,4 @@
-// 
+// Refactored by Breanna Powell and Melody Behdarvandian
 // Original Author: Jiawang Bian, Postdoctoral Researcher
 // 
 // The constructor and getInlierMask are public
@@ -12,6 +12,8 @@
 //      "type" to be "gridType" (in the getGridIndexLeft function)
 //      "InitalizeNeighbors" to "initializeNeighbors" (fixed typo)
 //      "vbInliers" to "inliersToReturn"
+// 
+// We also changed all methods and variable names to camel case.
 // 
 // We considered renaming "mGridSizeRight" and "mGridSizeLeft" but decided to keep them the same.
 //      Just remember that any time you see 
