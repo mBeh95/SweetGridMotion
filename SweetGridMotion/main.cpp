@@ -24,9 +24,9 @@
 #include "calculateMetrics.h"
 
 //#include "gms_matcher.h"
-//#include "gms_matcher_mb.h"
+//#include "gms_matcher_highres.h"
 //#include "gms_matcher_borders.h"
-#include "gms_matcher_rotation_complexity.h"
+#include "gms_matcher_rotation_complexity.h" //THIS ONE IS THE BEST FOR TESTING
 //#include "gms_matcher_increased_Precision.h"
 
 using namespace cv;
@@ -90,13 +90,13 @@ void orbKeyDes(Mat* descriptOne, Mat* descriptTwo,
 void runImagePair() {
 	//Both images are retrieved.
 	//Must be in the same folder as cpp file
-	//                          0         1          2                 3             4                5            6              7                8
+	// This string is a collection of images used for testing.
+	//                        0         1          2                 3             4                5            6              7                8
 	String photoNames[9] = { "01.jpg", "02.jpg", "02_FlipH.jpg", "02_FlipV.jpg", "02_Half.jpg", "02_Half2.jpg", "02_R45.jpg", "02_R90.jpg", "02_Zoomed.jpg" };
+	
+	//Homography imageset
 	Mat img1 = imread("EiffelA.png");
 	Mat img2 = imread("EiffelB.png");
-
-	//Mat img1 = imread(photoNames[0]);
-	//Mat img2 = imread(photoNames[7]);
 
 	//Run the GMS matching
 	gmsMatch(img1, img2);
