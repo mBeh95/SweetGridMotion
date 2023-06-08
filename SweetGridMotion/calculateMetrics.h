@@ -1,4 +1,4 @@
-// 
+// Breanna Powell and Melody Behdarvandian
 // Use the homography between two images to calculate how well GMS performed.
 
 #pragma once

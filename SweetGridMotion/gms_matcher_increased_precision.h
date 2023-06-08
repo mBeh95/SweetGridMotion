@@ -1,4 +1,4 @@
-// Breanna Powell and Melody 
+// Breanna Powell and Melody Behdarvandian
 // Goal 3: Increase the Precision using a sub-grid.
 // The changes to the algorithm are on lines 
 // 177-182; 

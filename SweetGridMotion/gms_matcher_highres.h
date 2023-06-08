@@ -1,4 +1,4 @@
-// Breanna Powell
+// Breanna Powell and Melody Behdarvandian
 // Goal 2: Grid adjustment for larger image sizes
 // The changes to the algorithm are on lines 
 // 92-95; 246-269;

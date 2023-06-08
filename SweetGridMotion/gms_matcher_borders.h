@@ -1,4 +1,4 @@
-// Breanna Powell
+// Breanna Powell and Melody Behdarvandian
 // Goal 1: Border cell adjustment
 // The changes to the algorithm are on lines 
 // 98-99; 138-142; 185-189; 332-362; 475-476; 708-713

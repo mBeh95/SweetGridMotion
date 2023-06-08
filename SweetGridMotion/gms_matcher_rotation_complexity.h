@@ -1,4 +1,4 @@
-// 
+// Breanna Powell and Melody Behdarvandian
 // Original Author: Jiawang Bian, Postdoctoral Researcher
 // 
 // The constructor and GetInlierMask are public

@@ -1,5 +1,4 @@
-// ConsoleApplication5.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+// Breanna Powell and Melody Behdarvandian
 
 #include <iostream>
 #include <opencv2/xfeatures2d.hpp>
@@ -26,6 +25,7 @@
 //#include "gms_matcher_mb.h"
 //#include "gms_matcher_borders.h"
 //#include "gms_matcher_rotation_complexity.h"
+//#include "gms_matcher_increased_Precision.h"
 
 using namespace cv;
 using namespace xfeatures2d;
@@ -125,9 +125,9 @@ void gmsMatch(Mat& img1, Mat& img2) {
 
 	int kpTotal = 10000;
 
-	siftKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
+	//siftKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
 
-	//orbKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
+	orbKeyDes(&d1, &d2, img1, img2, &kp1, &kp2, &matches_all, kpTotal);
 
 	drawMatches(img1, kp1, img2, kp2, matches_all, output);
 
@@ -153,7 +153,7 @@ void gmsMatch(Mat& img1, Mat& img2) {
 	gms_matcher gms(kp1, img1.size(), kp2, img2.size(), matches_all);
 
 	//get the number of inliers
-	int num_inliers = gms.GetInlierMask(vbInliers, false, true);
+	int num_inliers = gms.GetInlierMask(vbInliers, false, false);
 
 	// Get ending timepoint
 	auto stop = high_resolution_clock::now();
@@ -245,7 +245,6 @@ Mat drawInlier(Mat& src1, Mat& src2, vector<KeyPoint>& kpt1, vector<KeyPoint>& k
 
 
 /*
-
 int main()
 {
     std::cout << "Hello World!\n";
