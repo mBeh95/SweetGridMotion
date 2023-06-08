@@ -116,7 +116,7 @@ private:
 	// Normalized Points - filled during the NormalizePoints function
 	vector<Point2f> normalizedPoints1, normalizedPoints2;
 
-	// Matches - filled with pairs of points during the ConvertMatches function
+	// Matches - filled with pairs of points during the convertMatches function
 	vector<pair<int, int> > initialMatches;
 
 	// The original number of matches found between two images - initialized from the size of vDMatches 

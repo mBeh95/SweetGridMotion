@@ -64,11 +64,11 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         leftMatchesFromGMS.push_back(GMSkptsLeft[matchesFoundByGMS[i].queryIdx]);
         rightMatchesFromGMS.push_back(GMSkptsRight[matchesFoundByGMS[i].trainIdx]);
 
-        cout << "matchesFoundByGMS at queryIdx: " << matchesFoundByGMS[i].queryIdx << endl;
-        cout << "matchesFoundByGMS at trainIdx: " << matchesFoundByGMS[i].trainIdx << endl << endl;
+        //cout << "matchesFoundByGMS at queryIdx: " << matchesFoundByGMS[i].queryIdx << endl;
+        //cout << "matchesFoundByGMS at trainIdx: " << matchesFoundByGMS[i].trainIdx << endl << endl;
 
-        cout << "GMSkptsLeft[matchesFoundByGMS[i].queryIdx]: " << GMSkptsLeft[matchesFoundByGMS[i].queryIdx].pt << endl;
-        cout << "GMSkptsRight[matchesFoundByGMS[i].trainIdx]: " << GMSkptsRight[matchesFoundByGMS[i].trainIdx].pt << endl<< endl;
+        //cout << "GMSkptsLeft[matchesFoundByGMS[i].queryIdx]: " << GMSkptsLeft[matchesFoundByGMS[i].queryIdx].pt << endl;
+        //cout << "GMSkptsRight[matchesFoundByGMS[i].trainIdx]: " << GMSkptsRight[matchesFoundByGMS[i].trainIdx].pt << endl<< endl;
 
     }
 
@@ -106,10 +106,7 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         //col.at<double>(1, 0) = leftMatchesFromGMS[i].pt.y;
         //col.at<double>(2, 0) = 1;
 
-        cout << "THIS IS COL AT X Y Z before mulitiplication" << endl 
-            << col.at<double>(0, 0) << endl 
-            << col.at<double>(1, 0) << endl 
-            << col.at<double>(2, 0) << endl;
+        
 
         // Project the point from image1 to image2
         // [x] * homographyMat
@@ -117,10 +114,7 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         // [1]
         col = homographyMat * col;
 
-        cout << "THIS IS COL AT X Y Z after multiplying by the homography" << endl
-            << col.at<double>(0, 0) << endl
-            << col.at<double>(1, 0) << endl
-            << col.at<double>(2, 0) << endl;
+        
 
         // Project the point from image1 to image2
         // [x2 * scaling factor]
@@ -128,24 +122,18 @@ void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& 
         // [scaling factor]
         col /= col.at<double>(2, 0);
 
-        cout << "THESE ARE THE PROJECTED POINTS ON IMAGE 2:" << endl
-            << col.at<double>(0, 0) << endl
-            << col.at<double>(1, 0) << endl;
+       
 
         // Find the euclidean distance between the projected point
         // on image2 and the match that was found in image2.
 
-        cout << rightMatchesFromGMS[i].pt.x << endl;
-        cout << rightMatchesFromGMS[i].pt.y << endl;
+       
 
         double dist = 
 
             // square root of    (x2 - GMSx)^2 + (y2 - GMSy)^2
             sqrt(pow(col.at<double>(0, 0) - rightMatchesFromGMS[i].pt.x, 2)
                + pow(col.at<double>(1, 0) - rightMatchesFromGMS[i].pt.y, 2));
-
-        cout << "The euclidean distance is " << dist << endl;
-        cout << "If the distance was within" << inlier_threshold << "pixels count it as an inlier" << endl;
 
         // If the distance was within 2.5 pixels count it as an inlier
         if (dist < inlier_threshold) {
