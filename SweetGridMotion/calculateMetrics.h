@@ -34,19 +34,12 @@ using namespace std;
 void useHomography(const vector<KeyPoint>& GMSkptsLeft, const vector<KeyPoint>& GMSkptsRight, 
     vector<DMatch> matchesFoundByGMS, Mat& img1, Mat& img2) {
 
-    // Load homography file - not working
-    //FileStorage file = FileStorage("Eiffel_vpts.mat", 0);
-    //Mat homography = file.getFirstTopLevelNode().mat();
-
-    /*double homography[3][3] = 
+    //Eiffel tower Homography
+    double homography[3][3] = 
       { {1.32601002878971, -0.0583865106212613, -934.618313266433},
         {0.293840970834713,	1.08257312730755, 484.497536919587},
-        {0.000336792169880890, -0.000200624987739184, 1} };*/
+        {0.000336792169880890, -0.000200624987739184, 1} };
 
-    double homography[3][3] = { 
-        {0.929315345255432, -0.121244736991080, 50.7244433172911},
-        {-0.0275532282755572, 0.808809574501722, 832.934983027886},
-        {-0.000014365821012690, -0.000142061737799082, 1} };
 
     Mat homographyMat(3, 3, CV_64F, homography);
 
